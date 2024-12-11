@@ -221,7 +221,7 @@ inline Matrix Light::projMatrix() const
 
 inline Matrix Light::vpMatrix(int face) const
 {
-    return MatrixMultiply(viewMatrix(), projMatrix());
+    return MatrixMultiply(viewMatrix(face), projMatrix());
 }
 
 } // namespace r3d
