@@ -434,6 +434,22 @@ void R3D_UpdateInternalResolution(int width, int height);
 void R3D_SetBlitMode(bool blitAspectKeep, bool blitLinear);
 
 /**
+ * @brief Enables or disables frustum culling for objects rendered in the final visible scene.
+ * 
+ * This function allows you to enable or disable frustum culling, a technique used to exclude objects
+ * that are outside of the camera's viewing frustum from the rendering process. This can improve performance
+ * by reducing the number of objects that need to be drawn. It is particularly useful if you are already
+ * performing your own culling tests before calling `R3D_Draw()`.
+ * 
+ * @param enabled If `true`, frustum culling will be enabled. If `false`, frustum culling will be disabled.
+ * 
+ * @note This option does not apply to directional lights and spotlights that produce shadows. 
+ *       Frustum culling will still be performed from their respective viewpoints to determine if
+ *       an object should be rendered in their shadow maps.
+ */
+void R3D_SetFrustumCulling(bool enabled);
+
+/**
  * @brief Begins a new rendering frame using the R3D engine with the specified camera.
  * 
  * This function sets up the rendering process for the current frame. It prepares the internal rendering

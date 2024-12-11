@@ -62,6 +62,11 @@ void R3D_SetBlitMode(bool blitAspectKeep, bool blitLinear)
     gRenderer->blitLinear = blitLinear;
 }
 
+void R3D_SetFrustumCulling(bool enabled)
+{
+    gRenderer->performFrustumCulling = enabled;
+}
+
 void R3D_Begin(Camera3D camera)
 {
     gRenderer->setCamera(camera);
