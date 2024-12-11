@@ -69,6 +69,7 @@ int main(void)
 
     R3D_UnloadModel(&ground);
     R3D_UnloadModel(&robot);
+    R3D_UnloadSkybox(sky);
 
     UnloadTexture(texGround);
 
