@@ -727,18 +727,16 @@ inline void Renderer::draw(const R3D_Model& model, const Vector3& position, cons
                 }
             } break;
             case R3D_OMNILIGHT: {
-                // REVIEW: If we already check the distance, is it really useful to recheck the frustum for omni lights?
-                int face = getCubeMapFace(Vector3Subtract(modelPosition, light.position));
-                if (light.frustum.aabbIn(globalAABB)) {
-                    if (model.shadow != R3D_CAST_OFF && light.shadow) {
-                        for (const auto& surface : surfaces) {
-                            batch.push_back(DrawCallShadow { &surface, matModel });
-                        }
+                // If we have reached this point, it means that the model is within the maximum influence distance of the omni light. 
+                // Therefore, we don't need to perform a frustum test since it illuminates in all directions.
+                if (model.shadow != R3D_CAST_OFF && light.shadow) {
+                    for (const auto& surface : surfaces) {
+                        batch.push_back(DrawCallShadow { &surface, matModel });
                     }
-                    if (drawSurfaceScene && lightsWhichShouldIlluminateCount < SHADER_LIGHT_COUNT) {
-                        lightsWhichShouldIlluminate[lightsWhichShouldIlluminateCount] = &light;
-                        lightsWhichShouldIlluminateCount++;
-                    }
+                }
+                if (drawSurfaceScene && lightsWhichShouldIlluminateCount < SHADER_LIGHT_COUNT) {
+                    lightsWhichShouldIlluminate[lightsWhichShouldIlluminateCount] = &light;
+                    lightsWhichShouldIlluminateCount++;
                 }
             } break;
         }

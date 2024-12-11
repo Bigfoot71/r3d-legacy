@@ -128,7 +128,9 @@ inline Light::Light(R3D_LightType type, int shadowMapResolution)
 {
     if (shadow) {
         enableShadow(shadowMapResolution);
-        updateFrustum();
+        if (type != R3D_OMNILIGHT) {
+            updateFrustum();
+        }
     }
 }
 
@@ -181,6 +183,9 @@ inline void Light::disableShadow()
 
 inline void Light::updateFrustum()
 {
+    // Updating the frustum for an omnilight here doesn't make sense;
+    // we shouldn't use it for omnilights, but I'll leave it just in case.
+
     frustum = Frustum(vpMatrix(
         (type == R3D_OMNILIGHT) ? getCubeMapFace(direction) : -1
     ));
