@@ -29,7 +29,15 @@ typedef enum {
                                              *   window's aspect ratio rather than the internal resolution's.
                                              */
 
-    R3D_FLAG_DEBUG_SHADOW_MAP   = 1 << 2,   /**< Indicates whether the shadow map rendering shaders should be 
+    R3D_FLAG_NO_FRUSTUM_CULLING = 1 << 2,   /**< Indicates that frustum culling should not be performed on objects
+                                             *   rendered in the final scene. Useful if you are already using a 
+                                             *   more project-specific algorithm. However, this parameter is not 
+                                             *   applied to lights producing shadows; frustum culling will always 
+                                             *   be performed to determine if an object should be rendered in a 
+                                             *   shadow map.
+                                             */
+
+    R3D_FLAG_DEBUG_SHADOW_MAP   = 1 << 3,   /**< Indicates whether the shadow map rendering shaders should be 
                                              *   loaded. If this flag is not set, calling `R3D_DrawShadowMap` 
                                              *   will have no effect.
                                              */

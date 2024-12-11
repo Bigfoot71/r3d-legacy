@@ -66,7 +66,8 @@ static constexpr int SHADER_LIGHT_COUNT = 8;
 /**
  * @brief Stores a draw call for rendering in shadow maps.
  */
-struct DrawCallShadow {
+struct DrawCallShadow
+{
     const R3D_Surface *surface; ///< Pointer to the surface to be rendered.
     const Matrix transform;     ///< Transformation matrix for the draw call.
 };
@@ -74,19 +75,20 @@ struct DrawCallShadow {
 /**
  * @brief Stores a draw call for rendering in the main scene.
  */
-struct DrawCallScene {
+struct DrawCallScene
+{
     /**
      * @brief Alias for an array of light pointers used in the shader.
      */
     using LightsArray = std::array<const Light*, SHADER_LIGHT_COUNT>;
 
     struct {
-        const Mesh *mesh;        ///< Pointer to the mesh to be rendered.
-        R3D_Material material;  ///< Material copy for rendering the same mesh with different parameters.
-    } surface; ///< Surface information for the draw call.
+        const Mesh *mesh;           ///< Pointer to the mesh to be rendered.
+        R3D_Material material;      ///< Material copy for rendering the same mesh with different parameters.
+    } surface;                      ///< Surface information for the draw call.
 
-    const Matrix transform; ///< Transformation matrix for the draw call.
-    LightsArray lights;     ///< Array of light pointers influencing this draw call.
+    const Matrix transform;         ///< Transformation matrix for the draw call.
+    LightsArray lights;             ///< Array of light pointers influencing this draw call.
 };
 
 /**
@@ -135,6 +137,7 @@ class Renderer
 {
 public:
     R3D_Environment environment;    ///< Environment settings for the renderer.
+    bool performFrustumCulling;     ///< Flag to specify whether frustum culling should be performed for visible scene objects.
     bool blitAspectKeep;            ///< Flag to maintain aspect ratio during blitting.
     bool blitLinear;                ///< Flag to enable linear blitting.
 
@@ -409,6 +412,7 @@ inline Renderer::Renderer(int internalWidth, int internalHeight, int flags)
             .ambient        = DARKGRAY
         }
     })
+    , performFrustumCulling(!(flags & R3D_FLAG_NO_FRUSTUM_CULLING))
     , blitAspectKeep(flags & R3D_FLAG_ASPECT_KEEP)
     , blitLinear(flags & R3D_FLAG_BLIT_LINEAR)
     , mTargetScene(mInternalWidth, mInternalHeight)
@@ -608,6 +612,8 @@ inline void Renderer::setCamera(const Camera3D& camera)
 {
     mCamera = camera;
 
+    // Calculates the desired aspect ratio for the projection matrix
+
     float aspect = 1.0f;
     if (blitAspectKeep) {
         aspect = static_cast<float>(mInternalWidth) / mInternalHeight;
@@ -615,17 +621,25 @@ inline void Renderer::setCamera(const Camera3D& camera)
         aspect = static_cast<float>(GetScreenWidth()) / GetScreenHeight();
     }
 
+    // Retrieves the camera's view and projection matrices
+
     mMatCameraView = mCamera.viewMatrix();
     mMatCameraProj = mCamera.projMatrix(aspect);
-    mFrustumCamera = Frustum(MatrixMultiply(mMatCameraView, mMatCameraProj));
+
+    // Computes the camera's frustum if necessary
+
+    if (performFrustumCulling) {
+        mFrustumCamera = Frustum(MatrixMultiply(mMatCameraView, mMatCameraProj));
+    }
 }
 
 inline void Renderer::draw(const R3D_Model& model, const Vector3& position, const Vector3& rotationAxis, float rotationAngle, const Vector3& scale)
 {
     const std::vector<R3D_Surface>& surfaces = static_cast<Model*>(model.internal)->surfaces;
 
-    // Calculates the global transformation matrix of the model,
-    // its bounding box in global space, and its global position.
+    // Computes the model's transformation matrix using the provided parameters,
+    // the transformation assigned to the model, any parent transformations if present,
+    // the transformation specified via rlgl, and also retrieves the model's actual global position.
 
     Matrix matModel = MatrixMultiply(
         MatrixMultiply(
@@ -638,19 +652,20 @@ inline void Renderer::draw(const R3D_Model& model, const Vector3& position, cons
     matModel = MatrixMultiply(matModel, R3D_TransformToGlobal(&model.transform));
     matModel = MatrixMultiply(matModel, rlGetMatrixTransform());
 
+    const Vector3 modelPosition = Vector3Add(model.transform.position, position);
+
+    // Retrieves the model's bounding box transformed according to the previously obtained transformation matrix.
+
     BoundingBox globalAABB = model.aabb;
     globalAABB.min = Vector3Transform(globalAABB.min, matModel);
     globalAABB.max = Vector3Transform(globalAABB.max, matModel);
 
-    const Vector3 modelPosition = Vector3Add(
-        model.transform.position, position
-    );
+    // Performs a bounding box test for the model against the camera's frustum if necessary
+    // to determine if the object should be rendered in the visible scene. This feature can be
+    // disabled using the initialization flag 'R3D_FLAG_NO_FRUSTUM_CULLING'.
 
-    // Checks if the model should be rendered in the scene
-    // by testing if its bounding box is within the viewport.
-
-    bool drawSurfaceScene = false;
-    if (model.shadow != R3D_CAST_SHADOW_ONLY) {
+    bool drawSurfaceScene = true;
+    if (performFrustumCulling && model.shadow != R3D_CAST_SHADOW_ONLY) {
         drawSurfaceScene = mFrustumCamera.aabbIn(globalAABB);
     }
 
