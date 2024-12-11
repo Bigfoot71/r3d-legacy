@@ -450,6 +450,20 @@ void R3D_SetBlitMode(bool blitAspectKeep, bool blitLinear);
 void R3D_SetFrustumCulling(bool enabled);
 
 /**
+ * @brief Sets the render target for the R3D rendering process.
+ * 
+ * This function allows you to specify a custom render target where the rendering done by R3D 
+ * will be blitted, instead of the default main framebuffer. This is useful when you want to 
+ * render to off-screen targets for post-processing or other effects.
+ * 
+ * @param target A pointer to the render target (RenderTexture) where the rendering will be directed.
+ *               Pass `NULL` to restore the main framebuffer as the render target.
+ * 
+ * @note If `target` is `NULL`, the rendering will be directed back to the main framebuffer.
+ */
+void R3D_SetRenderTarget(const RenderTexture* target);
+
+/**
  * @brief Begins a new rendering frame using the R3D engine with the specified camera.
  * 
  * This function sets up the rendering process for the current frame. It prepares the internal rendering
@@ -458,6 +472,8 @@ void R3D_SetFrustumCulling(bool enabled);
  * @param camera The 3D camera to use for rendering the scene.
  * 
  * @note You cannot use `BeginTextureMode` to capture rendering performed by R3D into another framebuffer.
+ *       However, you can use `R3D_SetRenderTarget` to specify an alternative render target (other than the main framebuffer) 
+ *       for R3D's rendering operations. This allows you to perform off-screen rendering before finalizing the frame.
  *       This restriction exists because R3D manages its own internal render targets for post-processing 
  *       and shadow mapping. All drawing operations should be performed using `R3D_Draw` and finalized 
  *       with `R3D_End`.
@@ -507,8 +523,9 @@ void R3D_DrawPro(const R3D_Model* model, Vector3 position, Vector3 rotationAxis,
 /**
  * @brief Finalizes the current rendering frame.
  * 
- * This function completes the rendering process for the current frame. It applies post-processing
- * effects, handles internal buffer swaps, and ensures the final image is presented to the screen.
+ * This function completes the rendering process for the current frame.
+ * It iterates over all surfaces, rendering them first to the shadow maps, then to the scene render target,
+ * and finally applies all post-processing effects and blits the result to the defined render target or the main framebuffer.
  * 
  * @note This function must be called after all `R3D_Draw` operations for a frame are completed.
  */

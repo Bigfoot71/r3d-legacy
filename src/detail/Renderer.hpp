@@ -136,11 +136,13 @@ namespace r3d {
 class Renderer
 {
 public:
-    R3D_Environment environment;    ///< Environment settings for the renderer.
-    int flags;                      /**< Copies of the flags assigned during initialization,
-                                     *   may be modified during execution, except for flags that
-                                     *   require specific data initialization, such as debug flags.
-                                     */
+    R3D_Environment environment;                ///< Environment settings for the renderer.
+    const RenderTexture *customRenderTarget;    ///< Custom raylib render target to which the blit is performed instead of the main framebuffer.
+
+    int flags;  /**< Copies of the flags assigned during initialization,
+                 *   may be modified during execution, except for flags that
+                 *   require specific data initialization, such as debug flags.
+                 */
 
 public:
     /**
@@ -413,6 +415,7 @@ inline Renderer::Renderer(int internalWidth, int internalHeight, int flags)
             .ambient        = DARKGRAY
         }
     })
+    , customRenderTarget(nullptr)
     , flags(flags)
     , mTargetScene(mInternalWidth, mInternalHeight)
     , mTargetPostFX(mInternalWidth, mInternalHeight)
@@ -963,13 +966,14 @@ inline void Renderer::present()
     /* Blit result to the main framebuffer */
 
     bool blitLinear = R3D_FLAG_BLIT_LINEAR;
+    GLint target = customRenderTarget ? customRenderTarget->id : 0;
 
     if (flags & R3D_FLAG_ASPECT_KEEP) {
-        mTargetPostFX.blitAspectKeep(GLAttachement::COLOR_0, false, blitLinear);
-        mTargetScene.blitAspectKeep(GLAttachement::NONE, true, false);
+        mTargetPostFX.blitAspectKeep(target, GLAttachement::COLOR_0, false, blitLinear);
+        mTargetScene.blitAspectKeep(target, GLAttachement::NONE, true, false);
     } else {
-        mTargetPostFX.blitAspectExpand(GLAttachement::COLOR_0, false, blitLinear);
-        mTargetScene.blitAspectExpand(GLAttachement::NONE, true, false);
+        mTargetPostFX.blitAspectExpand(target, GLAttachement::COLOR_0, false, blitLinear);
+        mTargetScene.blitAspectExpand(target, GLAttachement::NONE, true, false);
     }
 
     /* Reset viewport */

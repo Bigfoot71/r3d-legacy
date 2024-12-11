@@ -71,6 +71,11 @@ void R3D_SetFrustumCulling(bool enabled)
     else gRenderer->flags |= R3D_FLAG_NO_FRUSTUM_CULLING;
 }
 
+void R3D_SetRenderTarget(const RenderTexture* target)
+{
+    gRenderer->customRenderTarget = target;
+}
+
 void R3D_Begin(Camera3D camera)
 {
     gRenderer->setCamera(camera);

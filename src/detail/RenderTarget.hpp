@@ -72,11 +72,13 @@ public:
 
     void draw(GLAttachement attach, int x, int y, int w, int h) const;
 
-    // Blit l'integralité du buffer (profondeur et attachement indiqué, COLOR_0 par defaut) au framebuffer principal de maniere entendu en utilisant l'apect ratio de la fenetre
-    void blitAspectExpand(GLAttachement attach = GLAttachement::COLOR_0, bool blitDepth = true, bool linear = false) const;
+    // Blit l'integralité du buffer (profondeur et attachement indiqué, COLOR_0 par defaut) vers le framebuffer indiqué de maniere entendu en utilisant l'apect ratio de la fenetre
+    // Veuillez vous assuré que le framebuffer target a un attachement de couleur ou de profondeur, ou les deux selon les parametres indiqués, les couleurs seront blit vers le color attachement 0.
+    void blitAspectExpand(GLuint fbTarget, GLAttachement attach = GLAttachement::COLOR_0, bool blitDepth = true, bool linear = false) const;
 
-    // Blit l'integralité du buffer (profondeur et attachement indiqué, COLOR_0 par defaut) au framebuffer principal en conservant l'aspect ratio de la resolution interne
-    void blitAspectKeep(GLAttachement attach = GLAttachement::COLOR_0, bool blitDepth = true, bool linear = false) const;
+    // Blit l'integralité du buffer (profondeur et attachement indiqué, COLOR_0 par defaut) vers le framebuffer indiqué au framebuffer principal en conservant l'aspect ratio de la resolution interne
+    // Veuillez vous assuré que le framebuffer target a un attachement de couleur ou de profondeur, ou les deux selon les parametres indiqués, les couleurs seront blit vers le color attachement 0.
+    void blitAspectKeep(GLuint fbTarget, GLAttachement attach = GLAttachement::COLOR_0, bool blitDepth = true, bool linear = false) const;
 
 private:
     std::map<GLAttachement, GLTexture> mAttachments; ///< TODO: Faire un allocateur de pile
@@ -226,7 +228,7 @@ inline void RenderTarget::draw(GLAttachement attach, int x, int y, int w, int h)
     rlEnd();
 }
 
-inline void RenderTarget::blitAspectExpand(GLAttachement attach, bool blitDepth, bool linear) const
+inline void RenderTarget::blitAspectExpand(GLuint fbTarget, GLAttachement attach, bool blitDepth, bool linear) const
 {
     GLbitfield mask = 0;
 
@@ -235,7 +237,7 @@ inline void RenderTarget::blitAspectExpand(GLAttachement attach, bool blitDepth,
     if (mask == 0) return;
 
     glBindFramebuffer(GL_READ_FRAMEBUFFER, mFramebuffer.id());
-    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
+    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, fbTarget);
 
     if (mask & GL_COLOR_BUFFER_BIT) {
         glReadBuffer(static_cast<GLenum>(attach));
@@ -250,7 +252,7 @@ inline void RenderTarget::blitAspectExpand(GLAttachement attach, bool blitDepth,
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
-inline void RenderTarget::blitAspectKeep(GLAttachement attach, bool blitDepth, bool linear) const
+inline void RenderTarget::blitAspectKeep(GLuint fbTarget, GLAttachement attach, bool blitDepth, bool linear) const
 {
     GLbitfield mask = 0;
 
@@ -259,7 +261,7 @@ inline void RenderTarget::blitAspectKeep(GLAttachement attach, bool blitDepth, b
     if (mask == 0) return;
 
     glBindFramebuffer(GL_READ_FRAMEBUFFER, mFramebuffer.id());
-    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
+    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, fbTarget);
 
     if (mask & GL_COLOR_BUFFER_BIT) {
         glReadBuffer(static_cast<GLenum>(attach));
