@@ -35,7 +35,7 @@ int main(void)
     R3D_Init();
 
     R3D_Skybox sky = R3D_LoadSkybox(R3D_ASSETS_PATH "skybox_indoor.png", CUBEMAP_LAYOUT_AUTO_DETECT);
-    R3D_SetEnvWorldSkybox(sky);
+    R3D_SetEnvWorldSkybox(&sky);
 
     R3D_MaterialConfig config = R3D_CreateMaterialConfig(
         R3D_DIFFUSE_BURLEY, R3D_SPECULAR_SCHLICK_GGX,
@@ -95,7 +95,7 @@ int main(void)
     UnloadTexture(occlusion);
 
     R3D_UnloadModel(&sphere);
-    R3D_UnloadSkybox(sky);
+    R3D_UnloadSkybox(&sky);
     R3D_Close();
 
     CloseWindow();

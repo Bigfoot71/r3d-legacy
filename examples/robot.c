@@ -23,7 +23,7 @@ int main(void)
     R3D_Init();
 
     R3D_Skybox sky = R3D_LoadSkybox(R3D_ASSETS_PATH "skybox_indoor.png", CUBEMAP_LAYOUT_AUTO_DETECT);
-    R3D_SetEnvWorldSkybox(sky);
+    R3D_SetEnvWorldSkybox(&sky);
 
     R3D_Model ground = R3D_LoadModelFromMesh(GenMeshPlane(10, 10, 1, 1));
     R3D_SetMapAlbedo(&ground, 0, &texGround, WHITE);
@@ -69,7 +69,7 @@ int main(void)
 
     R3D_UnloadModel(&ground);
     R3D_UnloadModel(&robot);
-    R3D_UnloadSkybox(sky);
+    R3D_UnloadSkybox(&sky);
 
     UnloadTexture(texGround);
 

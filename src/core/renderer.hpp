@@ -323,7 +323,7 @@ private:
      * @param drawCall The draw call information.
      * @param shader The shader to use for rendering.
      */
-    void drawSurfaceScene(const DrawCallScene& drawCall, const GLShader& shader) const;
+    void drawSurfaceScene(const DrawCallScene& drawCall, const GLShader& shader, const Quaternion& quatSkybox) const;
 
     /**
      * @brief Renders the shadow map for a directional light.
@@ -796,6 +796,8 @@ inline void Renderer::present()
 
     mTargetScene.begin();
     {
+        const R3D_Skybox *skybox = environment.world.skybox;
+
         /* Setup view port and clear target scene framebuffer */
 
         if (flags & R3D_FLAG_ASPECT_KEEP) {
@@ -822,8 +824,12 @@ inline void Renderer::present()
 
         /* Render skybox */
 
-        if (environment.world.skybox != nullptr) {
-            static_cast<Skybox*>(environment.world.skybox)->draw();
+        Quaternion quatSkybox = QuaternionIdentity();
+
+        if (skybox != nullptr) {
+            Vector3 rotSkybox = Vector3Scale(skybox->rotation, DEG2RAD);
+            quatSkybox = QuaternionFromEuler(rotSkybox.x, rotSkybox.y, rotSkybox.z);
+            static_cast<Skybox*>(skybox->internal)->draw(quatSkybox);
         }
 
         /* Render surfaces */
@@ -880,7 +886,7 @@ inline void Renderer::present()
 
             shader.begin();
                 for (const auto& drawCall : batch) {
-                    drawSurfaceScene(drawCall, shader);
+                    drawSurfaceScene(drawCall, shader, quatSkybox);
                 }
             shader.end();
 
@@ -1179,8 +1185,9 @@ inline void Renderer::drawSurfaceShadow(const DrawCallShadow& drawCall, const Li
     rlSetMatrixProjection(matProjection);
 }
 
-inline void Renderer::drawSurfaceScene(const DrawCallScene& drawCall, const GLShader& shader) const
+inline void Renderer::drawSurfaceScene(const DrawCallScene& drawCall, const GLShader& shader, const Quaternion& quatSkybox) const
 {
+    const R3D_Skybox *skybox = environment.world.skybox;
     const ::Mesh& mesh = *drawCall.surface.mesh;
 
     const R3D_Material& material = drawCall.surface.material;
@@ -1201,14 +1208,13 @@ inline void Renderer::drawSurfaceScene(const DrawCallScene& drawCall, const GLSh
 
         shader.setValue("uViewPos", mCamera.position);
 
-        Skybox* skybox = static_cast<Skybox*>(environment.world.skybox);
-
         if (config.shader.flags & R3D_MATERIAL_FLAG_SKY_IBL) {
             shader.setValue("uHasSkybox", skybox != nullptr);
             if (skybox != nullptr) {
-                shader.bindTexture("uCubeIrradiance", GL_TEXTURE_CUBE_MAP, skybox->getIrradianceCubemapID());
-                shader.bindTexture("uCubePrefilter", GL_TEXTURE_CUBE_MAP, skybox->getPrefilterCubemapID());
-                shader.bindTexture("uTexBrdfLUT", GL_TEXTURE_2D, skybox->getBrdfLUTTextureID());
+                shader.bindTexture("uCubeIrradiance", GL_TEXTURE_CUBE_MAP, static_cast<Skybox*>(skybox->internal)->getIrradianceCubemapID());
+                shader.bindTexture("uCubePrefilter", GL_TEXTURE_CUBE_MAP, static_cast<Skybox*>(skybox->internal)->getPrefilterCubemapID());
+                shader.bindTexture("uTexBrdfLUT", GL_TEXTURE_2D, static_cast<Skybox*>(skybox->internal)->getBrdfLUTTextureID());
+                shader.setValue("uQuatSkybox", quatSkybox);
             }
         }
 

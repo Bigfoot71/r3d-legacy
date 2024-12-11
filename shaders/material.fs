@@ -130,6 +130,7 @@ uniform float uValAOLightAffect;
 uniform samplerCube uCubeIrradiance;
 uniform samplerCube uCubePrefilter;
 uniform sampler2D uTexBrdfLUT;
+uniform vec4 uQuatSkybox;
 uniform bool uHasSkybox;
 #endif
 
@@ -240,6 +241,15 @@ float Shadow(int i, float cNdotL)
 }
 
 #endif // RECEIVE_SHADOW
+
+// === Helper functions ===
+
+vec3 RotateWithQuat(vec3 v, vec4 q)
+{
+    // Quaternion multiplication: q * v * q^-1
+    vec3 t = 2.0 * cross(q.xyz, v);
+    return v + q.w * t + cross(q.xyz, t);
+}
 
 // === Main program ===
 
@@ -462,7 +472,9 @@ void main()
             vec3 kS = F0 + (1.0 - F0) * SchlickFresnel(cNdotV);
             vec3 kD = (1.0 - kS) * (1.0 - metalness);
 
-            ambient = kD * texture(uCubeIrradiance, N).rgb;
+            vec3 Nr = RotateWithQuat(N, uQuatSkybox);
+
+            ambient = kD * texture(uCubeIrradiance, Nr).rgb;
         }
     }
     #endif
@@ -484,7 +496,8 @@ void main()
     {
         if (uHasSkybox)
         {
-            vec3 R = reflect(-V, N);
+            vec3 R = RotateWithQuat(reflect(-V, N), uQuatSkybox);
+
             const float MAX_REFLECTION_LOD = 4.0;
             vec3 prefilteredColor = textureLod(uCubePrefilter, R, roughness * MAX_REFLECTION_LOD).rgb;
 

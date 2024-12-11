@@ -195,13 +195,16 @@ typedef enum {
 /* Structs */
 
 /**
- * @typedef R3D_Skybox
- * @brief Represents an opaque type for handling skyboxes in the rendering engine.
- * 
- * A skybox is a cube-mapped texture used to create the illusion of a distant environment, such as a sky or space.
- * The actual implementation is opaque and managed internally by the rendering engine.
+ * @struct R3D_Skybox
+ * @brief Defines a customizable skybox for the renderer.
+ *
+ * The `R3D_Skybox` structure contains information about the orientation of the skybox 
+ * in 3D space and an opaque pointer to internal rendering data.
  */
-typedef void* R3D_Skybox;
+typedef struct {
+    Vector3 rotation;   /**< Defines the orientation of the skybox in 3D space. */
+    void *internal;     /**< Opaque pointer to internal data for rendering management. */
+} R3D_Skybox;
 
 /**
  * @struct R3D_Environment
@@ -240,7 +243,7 @@ typedef struct {
     } adjustements;             /**< Configuration for post-processing color adjustments. */
 
     struct {
-        R3D_Skybox skybox;      /**< Skybox used for rendering the world environment. Default: `NULL`. */
+        R3D_Skybox *skybox;     /**< Skybox used for rendering the world environment. Default: `NULL`. */
         Color background;       /**< Background color (used only when no skybox is defined). Default: `GRAY`. */
         Color ambient;          /**< Ambient color (used only when no skybox is defined). Default: `DARKGRAY`. */
     } world;                    /**< Configuration for the world environment, including skybox and ambient settings. */
@@ -871,7 +874,7 @@ void R3D_SetEnvAdjustSaturation(float saturation);
  * 
  * @return The current `R3D_Skybox` in the environment. If no skybox is set, `NULL` is returned.
  */
-R3D_Skybox R3D_GetEnvWorldSkybox(void);
+R3D_Skybox* R3D_GetEnvWorldSkybox(void);
 
 /**
  * @brief Sets the skybox used in the environment settings.
@@ -881,7 +884,7 @@ R3D_Skybox R3D_GetEnvWorldSkybox(void);
  * 
  * @param skybox The `R3D_Skybox` to set as the world background. Passing `NULL` will disable the skybox.
  */
-void R3D_SetEnvWorldSkybox(R3D_Skybox skybox);
+void R3D_SetEnvWorldSkybox(R3D_Skybox* skybox);
 
 /**
  * @brief Retrieves the current ambient color for the world when no skybox is used.
@@ -1443,7 +1446,7 @@ R3D_Skybox R3D_LoadSkyboxHDR(const char* fileName, int sizeFace);
  * 
  * @note It is safe to provide a skybox that is currently being used in the scene. If so, the skybox will be replaced with `NULL`.
  */
-void R3D_UnloadSkybox(R3D_Skybox skybox);
+void R3D_UnloadSkybox(R3D_Skybox* skybox);
 
 
 

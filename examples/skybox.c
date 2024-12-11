@@ -20,7 +20,7 @@ int main(void)
     ));
 
     R3D_Skybox sky = R3D_LoadSkybox(R3D_ASSETS_PATH "skybox_outdoor.png", CUBEMAP_LAYOUT_AUTO_DETECT);
-    R3D_SetEnvWorldSkybox(sky);
+    R3D_SetEnvWorldSkybox(&sky);
 
     R3D_Model sphere = R3D_LoadModelFromMesh(GenMeshSphere(1.0f, 32, 32));
 
@@ -67,7 +67,7 @@ int main(void)
     }
 
     R3D_UnloadModel(&sphere);
-    R3D_UnloadSkybox(sky);
+    R3D_UnloadSkybox(&sky);
     R3D_Close();
 
     CloseWindow();

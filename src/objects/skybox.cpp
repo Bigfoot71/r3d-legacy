@@ -30,19 +30,29 @@
 
 R3D_Skybox R3D_LoadSkybox(const char* fileName, CubemapLayout layout)
 {
-    return new r3d::Skybox(fileName, layout);
+    void *sky = new r3d::Skybox(fileName, layout);
+
+    return {
+        .rotation = (Vector3) { 0, 0, 0 },
+        .internal = sky
+    };
 }
 
 R3D_Skybox R3D_LoadSkyboxHDR(const char* fileName, int sizeFace)
 {
-    return new r3d::Skybox(fileName, sizeFace);
+    void *sky = new r3d::Skybox(fileName, sizeFace);
+
+    return {
+        .rotation = (Vector3) { 0, 0, 0 },
+        .internal = sky
+    };
 }
 
-void R3D_UnloadSkybox(R3D_Skybox skybox)
+void R3D_UnloadSkybox(R3D_Skybox* skybox)
 {
     if (gRenderer && gRenderer->environment.world.skybox == skybox) {
         gRenderer->environment.world.skybox = nullptr;
     }
 
-    delete static_cast<r3d::Skybox*>(skybox);
+    delete static_cast<r3d::Skybox*>(skybox->internal);
 }

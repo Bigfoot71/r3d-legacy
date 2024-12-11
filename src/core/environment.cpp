@@ -164,14 +164,14 @@ void R3D_SetEnvAdjustSaturation(float saturation)
     gRenderer->environment.adjustements.saturation = saturation;
 }
 
-R3D_Skybox R3D_GetEnvWorldSkybox()
+R3D_Skybox* R3D_GetEnvWorldSkybox()
 {
     return gRenderer->environment.world.skybox;
 }
 
-void R3D_SetEnvWorldSkybox(R3D_Skybox skybox)
+void R3D_SetEnvWorldSkybox(R3D_Skybox* skybox)
 {
-    gRenderer->environment.world.skybox = static_cast<r3d::Skybox*>(skybox);
+    gRenderer->environment.world.skybox = skybox;
 }
 
 Color R3D_GetEnvWorldAmbient()

@@ -51,7 +51,7 @@ public:
 
     ~Skybox();
 
-    void draw() const;
+    void draw(const Quaternion& rotation) const;
 
     unsigned int getSkyboxCuebmapID() const {
         return mCubemap.id;
@@ -137,7 +137,7 @@ inline Skybox::~Skybox()
     }
 }
 
-inline void Skybox::draw() const
+inline void Skybox::draw(const Quaternion& rotation) const
 {
     const GLShader& shader = sShared->shaderSkybox;
 
@@ -153,6 +153,9 @@ inline void Skybox::draw() const
 
     // Bind cubemap texture
     shader.bindTexture("uTexSkybox", GL_TEXTURE_CUBE_MAP, mCubemap.id);
+
+    // Set skybox parameters
+    shader.setValue("uRotation", rotation);
 
     // Try binding vertex array objects (VAO) or use VBOs if not possible
     if (!rlEnableVertexArray(sShared->VAO)) {
@@ -187,10 +190,6 @@ inline void Skybox::draw() const
 
     // Disable shader program
     shader.end();
-
-    // Restore rlgl internal modelview and projection matrices
-    rlSetMatrixModelview(matView);
-    rlSetMatrixProjection(matProj);
 
     rlEnableBackfaceCulling();
     rlEnableDepthMask();
