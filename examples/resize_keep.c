@@ -5,7 +5,7 @@
 int main(void)
 {
     SetConfigFlags(FLAG_WINDOW_RESIZABLE);
-    InitWindow(800, 600, "BRL - Basic example");
+    InitWindow(800, 600, "BRL - Reisze keep aspect");
     SetTargetFPS(60);
 
     R3D_InitEx(1920, 1080, R3D_FLAG_ASPECT_KEEP);

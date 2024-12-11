@@ -15,7 +15,7 @@ Texture2D loadGroundTexture(void)
 
 int main(void)
 {
-    InitWindow(800, 600, "BRL - Basic example");
+    InitWindow(800, 600, "BRL - Robot");
     SetTargetFPS(60);
 
     Texture texGround = loadGroundTexture();

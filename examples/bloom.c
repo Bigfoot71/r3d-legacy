@@ -3,7 +3,7 @@
 
 int main(void)
 {
-    InitWindow(800, 600, "BRL - Point lights");
+    InitWindow(800, 600, "BRL - Bloom");
     SetTargetFPS(60);
 
     R3D_Init();

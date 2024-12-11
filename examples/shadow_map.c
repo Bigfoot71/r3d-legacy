@@ -4,7 +4,7 @@
 
 int main(void)
 {
-    InitWindow(800, 600, "BRL - Point lights");
+    InitWindow(800, 600, "BRL - Shadow maps");
     SetTargetFPS(60);
     DisableCursor();
 
