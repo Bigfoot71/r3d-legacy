@@ -7,7 +7,7 @@
 
 int main(void)
 {
-    InitWindow(800, 600, "BRL - Skybox");
+    InitWindow(800, 600, "R3D - Skybox");
     SetTargetFPS(60);
 
     R3D_Init();

@@ -4,7 +4,7 @@
 
 int main(void)
 {
-    InitWindow(800, 600, "BRL - Custom target");
+    InitWindow(800, 600, "R3D - Custom target");
     SetTargetFPS(60);
 
     R3D_Init();

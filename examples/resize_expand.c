@@ -5,7 +5,7 @@
 int main(void)
 {
     SetConfigFlags(FLAG_WINDOW_RESIZABLE);
-    InitWindow(800, 600, "BRL - Resize expanded");
+    InitWindow(800, 600, "R3D - Resize expanded");
     SetTargetFPS(60);
 
     R3D_InitEx(1920, 1080, R3D_FLAG_BLIT_LINEAR);

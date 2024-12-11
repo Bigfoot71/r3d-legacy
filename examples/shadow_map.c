@@ -4,7 +4,7 @@
 
 int main(void)
 {
-    InitWindow(800, 600, "BRL - Shadow maps");
+    InitWindow(800, 600, "R3D - Shadow maps");
     SetTargetFPS(60);
     DisableCursor();
 

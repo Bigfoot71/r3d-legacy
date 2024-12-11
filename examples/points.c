@@ -3,7 +3,7 @@
 
 int main(void)
 {
-    InitWindow(800, 600, "BRL - Point lights");
+    InitWindow(800, 600, "R3D - Point lights");
     SetTargetFPS(60);
     DisableCursor();
 
