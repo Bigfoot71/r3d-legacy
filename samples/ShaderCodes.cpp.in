@@ -1,0 +1,37 @@
+// ShaderCodes.cpp - Automatically generated
+
+#include "detail/ShaderCodes.hpp"
+
+namespace r3d {
+
+const char VS_CODE_MATERIAL[] = R"(@VS_CODE_MATERIAL@)";
+const char FS_CODE_MATERIAL[] = R"(@FS_CODE_MATERIAL@)";
+
+const char VS_CODE_DEPTH[] = R"(@VS_CODE_DEPTH@)";
+const char FS_CODE_DEPTH[] = R"(@FS_CODE_DEPTH@)";
+
+const char VS_CODE_DEPTH_CUBE[] = R"(@VS_CODE_DEPTH_CUBE@)";
+const char FS_CODE_DEPTH_CUBE[] = R"(@FS_CODE_DEPTH_CUBE@)";
+
+const char VS_CODE_BLUR[] = R"(@VS_CODE_BLUR@)";
+const char FS_CODE_BLUR[] = R"(@FS_CODE_BLUR@)";
+
+const char VS_CODE_POSTFX[] = R"(@VS_CODE_POSTFX@)";
+const char FS_CODE_POSTFX[] = R"(@FS_CODE_POSTFX@)";
+
+const char VS_CODE_SKYBOX[] = R"(@VS_CODE_SKYBOX@)";
+const char FS_CODE_SKYBOX[] = R"(@FS_CODE_SKYBOX@)";
+
+const char VS_CODE_CUBEMAP[] = R"(@VS_CODE_CUBEMAP@)";
+const char FS_CODE_PREFILTER[] = R"(@FS_CODE_PREFILTER@)";
+const char FS_CODE_IRRADIANCE_CONVOLUTION[] = R"(@FS_CODE_IRRADIANCE_CONVOLUTION@)";
+const char FS_CODE_CUBEMAP_FROM_EQUIRECTANGULAR[] = R"(@FS_CODE_CUBEMAP_FROM_EQUIRECTANGULAR@)";
+
+const char VS_CODE_BRDF[] = R"(@VS_CODE_BRDF@)";
+const char FS_CODE_BRDF[] = R"(@FS_CODE_BRDF@)";
+
+const char VS_CODE_DEBUG_DEPTH[] = R"(@VS_CODE_DEBUG_DEPTH@)";
+const char FS_CODE_DEBUG_DEPTH_TEXTURE_2D[] = R"(@FS_CODE_DEBUG_DEPTH_TEXTURE_2D@)";
+const char FS_CODE_DEBUG_DEPTH_CUBEMAP[] = R"(@FS_CODE_DEBUG_DEPTH_CUBEMAP@)";
+
+}
