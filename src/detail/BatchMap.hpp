@@ -151,7 +151,7 @@ public:
     }
 
 private:
-    std::map<Key, Batch, std::less<Key>> mMap{}; ///< The map storing batches, sorted by the key.
+    std::map<Key, Batch, Compare> mMap{}; ///< The map storing batches, sorted by the key.
 };
 
 } // namespace r3d

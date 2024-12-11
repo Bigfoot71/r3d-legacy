@@ -28,7 +28,8 @@ class GLQuad
 {
 public:
     GLQuad() {
-        float vertices[] = {
+        constexpr float VERTICES[] =
+        {
             // Positions         Texcoords
             -1.0f,  1.0f, 0.0f,   0.0f, 1.0f,
             -1.0f, -1.0f, 0.0f,   0.0f, 0.0f,
@@ -41,7 +42,7 @@ public:
 
         glGenBuffers(1, &mVBO);
         glBindBuffer(GL_ARRAY_BUFFER, mVBO);
-        glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), &vertices, GL_STATIC_DRAW);
+        glBufferData(GL_ARRAY_BUFFER, sizeof(VERTICES), &VERTICES, GL_STATIC_DRAW);
 
         glEnableVertexAttribArray(0);
         glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5*sizeof(float), (void *)0); // Positions

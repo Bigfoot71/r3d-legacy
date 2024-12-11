@@ -34,66 +34,177 @@
 
 namespace r3d {
 
-// Sert de containeur generique de cible de rendu,
-// par ex. pour les shadow maps, les posts process, etc..
+/**
+ * @class RenderTarget
+ * @brief A generic container for rendering targets such as shadow maps, post-processing targets, and more.
+ * 
+ * This class provides utilities for managing and configuring OpenGL rendering targets, including
+ * attachment creation, buffer configuration, resizing, and advanced blitting operations.
+ */
 class RenderTarget
 {
 public:
+    /**
+     * @brief Constructor to initialize the render target with a given width and height.
+     * @param w The width of the render target.
+     * @param h The height of the render target.
+     */
     RenderTarget(int w, int h);
 
+    /**
+     * @brief Creates an attachment for the render target.
+     * @param attach The attachment type (e.g., color, depth).
+     * @param target The OpenGL target (e.g., GL_TEXTURE_2D, GL_TEXTURE_CUBE_MAP).
+     * @param internalFormat The internal format of the texture (e.g., GL_RGBA).
+     * @param format The format of the texture data (e.g., GL_RGBA).
+     * @param type The data type of the texture data (e.g., GL_UNSIGNED_BYTE).
+     * @return A reference to the created texture.
+     */
     GLTexture& createAttachment(GLAttachement attach, GLenum target, GLenum internalFormat, GLenum format, GLenum type);
 
+    /**
+     * @brief Sets the draw buffers for the render target.
+     * @param list A list of attachments to be used as draw buffers.
+     */
     void setDrawBuffers(const std::initializer_list<GLAttachement>& list) const;
 
+    /**
+     * @brief Sets a single draw buffer for the render target.
+     * @param attach The attachment to be used as the draw buffer.
+     */
     void setDrawBuffer(GLAttachement attach) const;
 
+    /**
+     * @brief Sets the read buffer for the render target.
+     * @param attach The attachment to be used as the read buffer.
+     */
     void setReadBuffer(GLAttachement attach) const;
 
+    /**
+     * @brief Binds the render target for rendering operations.
+     */
     void begin() const;
 
+    /**
+     * @brief Ends rendering operations on the current render target.
+     */
     static void end();
 
+    /**
+     * @brief Binds a specific face of a cube map attachment for rendering.
+     * @param attach The attachment to bind.
+     * @param face The face index of the cube map (0 to 5).
+     */
     void bindFace(GLAttachement attach, int face) const;
 
+    /**
+     * @brief Retrieves a non-const reference to an attachment texture.
+     * @param attach The attachment to retrieve.
+     * @return A reference to the attachment texture.
+     */
     GLTexture& attachement(GLAttachement attach);
 
+    /**
+     * @brief Retrieves a const reference to an attachment texture.
+     * @param attach The attachment to retrieve.
+     * @return A const reference to the attachment texture.
+     */
     const GLTexture& attachement(GLAttachement attach) const;
 
-    // Permet de redimensionner les attachements de la cible de rendu
+    /**
+     * @brief Resizes the attachments of the render target.
+     * @param newWidth The new width of the render target.
+     * @param newHeight The new height of the render target.
+     */
     void resize(int newWidth, int newHeight);
 
-    int width() const;
-
-    int height() const;
-
-    int texelWidth() const;
-
-    int texelHeight() const;
-
+    /**
+     * @brief Draws a specific attachment onto a specified region.
+     * @param attach The attachment to draw.
+     * @param x The x-coordinate of the target region.
+     * @param y The y-coordinate of the target region.
+     * @param w The width of the target region.
+     * @param h The height of the target region.
+     */
     void draw(GLAttachement attach, int x, int y, int w, int h) const;
 
-    // Blit l'integralité du buffer (profondeur et attachement indiqué, COLOR_0 par defaut) vers le framebuffer indiqué de maniere entendu en utilisant l'apect ratio de la fenetre
-    // Veuillez vous assuré que le framebuffer target a un attachement de couleur ou de profondeur, ou les deux selon les parametres indiqués, les couleurs seront blit vers le color attachement 0.
+    /**
+     * @brief Blits the entire buffer to another framebuffer, expanding to fit the window aspect ratio.
+     * @param fbTarget The target framebuffer.
+     * @param attach The attachment to blit (default is COLOR_0).
+     * @param blitDepth Whether to include the depth buffer in the blit.
+     * @param linear Whether to use linear filtering during the blit.
+     */
     void blitAspectExpand(GLuint fbTarget, GLAttachement attach = GLAttachement::COLOR_0, bool blitDepth = true, bool linear = false) const;
 
-    // Blit l'integralité du buffer (profondeur et attachement indiqué, COLOR_0 par defaut) vers le framebuffer indiqué au framebuffer principal en conservant l'aspect ratio de la resolution interne
-    // Veuillez vous assuré que le framebuffer target a un attachement de couleur ou de profondeur, ou les deux selon les parametres indiqués, les couleurs seront blit vers le color attachement 0.
+    /**
+     * @brief Blits the entire buffer to another framebuffer, keeping the internal resolution aspect ratio.
+     * @param fbTarget The target framebuffer.
+     * @param attach The attachment to blit (default is COLOR_0).
+     * @param blitDepth Whether to include the depth buffer in the blit.
+     * @param linear Whether to use linear filtering during the blit.
+     */
     void blitAspectKeep(GLuint fbTarget, GLAttachement attach = GLAttachement::COLOR_0, bool blitDepth = true, bool linear = false) const;
 
-private:
-    std::map<GLAttachement, GLTexture> mAttachments; ///< TODO: Faire un allocateur de pile
-    GLFramebuffer mFramebuffer;
-    int mWidth, mHeight;
-    float mTxlW, mTxlH;
+    /**
+     * @brief Retrieves the width of the render target.
+     * @return The width in pixels.
+     */
+    int width() const {
+        return mWidth;
+    }
 
-    // Permet de généré des textures, utilisé pour la creation d'attachement
-    // NOTE: Ne supporte uniquement 'GL_TEXTURE_2D' et 'GL_TEXTURE_CUBE_MAP'
+    /**
+     * @brief Retrieves the height of the render target.
+     * @return The height in pixels.
+     */
+    int height() const {
+        return mHeight;
+    }
+
+    /**
+     * @brief Retrieves the texel width of the render target.
+     * @return The texel width as a float.
+     */
+    int texelWidth() const {
+        return mTxlW;
+    }
+
+    /**
+     * @brief Retrieves the texel height of the render target.
+     * @return The texel height as a float.
+     */
+    int texelHeight() const {
+        return mTxlH;
+    }
+
+private:
+    /**
+     * @brief Creates a texture for use as an attachment.
+     * @note Only supports GL_TEXTURE_2D and GL_TEXTURE_CUBE_MAP.
+     * @param target The OpenGL target (e.g., GL_TEXTURE_2D, GL_TEXTURE_CUBE_MAP).
+     * @param internalFormat The internal format of the texture.
+     * @param format The format of the texture data.
+     * @param type The data type of the texture data.
+     * @return The created texture.
+     */
     GLTexture createTexture(GLenum target, GLenum internalFormat, GLenum format, GLenum type);
 
-    // Permet de convertir l'enum class 'GLAttachement' en type d'attachement OpenGL
+    /**
+     * @brief Converts a GLAttachement enum to an OpenGL attachment type.
+     * @param attach The GLAttachement to convert.
+     * @return The corresponding OpenGL attachment type.
+     */
     static GLenum glAttachement(GLAttachement attach);
-};
 
+private:
+    std::map<GLAttachement, GLTexture> mAttachments;    ///< Map of attachments for the render target.
+    GLFramebuffer mFramebuffer;                         ///< The framebuffer associated with the render target.
+    int mWidth;                                         ///< The width of the render target.
+    int mHeight;                                        ///< The height of the render target.
+    float mTxlW;                                        ///< The texel width.
+    float mTxlH;                                        ///< The texel height.
+};
 
 /* Public implementation */
 
@@ -169,7 +280,6 @@ inline const GLTexture& RenderTarget::attachement(GLAttachement attach) const
     return mAttachments.at(attach);
 }
 
-// Permet de redimensionner les attachements de la cible de rendu
 inline void RenderTarget::resize(int newWidth, int newHeight)
 {
     mWidth = newWidth, mHeight = newHeight;
@@ -179,26 +289,6 @@ inline void RenderTarget::resize(int newWidth, int newHeight)
             texture.resize(newWidth, newHeight);
         }
     }
-}
-
-inline int RenderTarget::width() const
-{
-    return mWidth;
-}
-
-inline int RenderTarget::height() const
-{
-    return mHeight;
-}
-
-inline int RenderTarget::texelWidth() const
-{
-    return mTxlW;
-}
-
-inline int RenderTarget::texelHeight() const
-{
-    return mTxlH;
 }
 
 inline void RenderTarget::draw(GLAttachement attach, int x, int y, int w, int h) const
@@ -267,21 +357,21 @@ inline void RenderTarget::blitAspectKeep(GLuint fbTarget, GLAttachement attach, 
         glReadBuffer(static_cast<GLenum>(attach));
     }
 
-    // Taille de l'écran et du contenu à bliter
+    // Screen size and content to be blitted
     const float screenRatio = static_cast<float>(GetScreenWidth()) / GetScreenHeight();
     const float contentRatio = static_cast<float>(mWidth) / mHeight;
 
-    // Variables pour la position de départ du blit et la taille de la zone à bliter
+    // Variables for the starting position of the blit and the size of the area to be blitted
     int blitX = 0, blitY = 0, blitWidth = GetScreenWidth(), blitHeight = GetScreenHeight();
 
     if (contentRatio > screenRatio) {
-        // L'image est plus large que l'écran, on ajuste la largeur pour conserver le ratio d'aspect
+        // The image is wider than the screen, adjust the width to maintain the aspect ratio
         blitHeight = static_cast<int>(GetScreenWidth() / contentRatio);
-        blitY = (GetScreenHeight() - blitHeight) / 2; // On centre verticalement
+        blitY = (GetScreenHeight() - blitHeight) / 2; // Center it vertically
     } else {
-        // L'image est plus haute que l'écran, on ajuste la hauteur pour conserver le ratio d'aspect
+        // The image is taller than the screen, adjust the height to maintain the aspect ratio
         blitWidth = static_cast<int>(GetScreenHeight() * contentRatio);
-        blitX = (GetScreenWidth() - blitWidth) / 2; // On centre horizontalement
+        blitX = (GetScreenWidth() - blitWidth) / 2; // Center it horizontally
     }
 
     glBlitFramebuffer(
