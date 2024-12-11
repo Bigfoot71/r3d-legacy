@@ -363,10 +363,8 @@ typedef unsigned int R3D_Light;
 extern "C" {
 #endif
 
-// DOC: Tous les objets provenant du module 'core' n'ont pas besoin de destruction explicite et seront detruit à l'appel de 'R3D_Close();'
 
-
-/* [Core] Main functions */
+/* [Core] - Renderer functions */
 
 /**
  * @brief Initializes the R3D rendering engine with default settings.
@@ -557,7 +555,8 @@ const Texture2D* R3D_GetDefaultTextureBlack(void);
 const Texture2D* R3D_GetDefaultTextureWhite(void);
 
 
-/* [Core] Environment Functions */
+
+/* [Core] - Environment Functions */
 
 /**
  * @brief Retrieves the current environment settings used by the renderer.
@@ -921,7 +920,8 @@ Color R3D_GetEnvWorldBackground(void);
 void R3D_SetEnvWorldBackground(Color color);
 
 
-/* [Core] Material Functions */
+
+/* [Core] - Material Functions */
 
 /**
  * @brief Creates a new material configuration with the specified parameters.
@@ -1013,7 +1013,8 @@ void R3D_UnloadMaterialConfig(R3D_MaterialConfig config);
 bool R3D_IsMaterialConfigValid(R3D_MaterialConfig config);
 
 
-/* [Core] Lighting functions */
+
+/* Lighting functions */
 
 /**
  * @brief Creates a light of the specified type.
@@ -1361,7 +1362,8 @@ R3D_LightType R3D_GetLightType(R3D_Light light);
 void R3D_SetLightType(R3D_Light light, R3D_LightType type);
 
 
-/* [Core] Debug functions */
+
+/* [Core] - Debug functions */
 
 /**
  * @brief Retrieves the count of draw calls for the scene and shadows.
@@ -1401,7 +1403,8 @@ void R3D_GetDrawCallCount(int* sceneDrawCount, int* shadowDrawCount);
 void R3D_DrawShadowMap(R3D_Light light, int x, int y, int width, int height, float zNear, float zFar);
 
 
-/* Skybox Functions */
+
+/* [Objects] - Skybox Functions */
 
 /**
  * @brief Loads a skybox from a set of textures.
@@ -1443,7 +1446,8 @@ R3D_Skybox R3D_LoadSkyboxHDR(const char* fileName, int sizeFace);
 void R3D_UnloadSkybox(R3D_Skybox skybox);
 
 
-/* Material Functions */
+
+/* [Objects] - Material Functions */
 
 /**
  * @brief Loads a model from a file.
@@ -1724,7 +1728,8 @@ void R3D_UpdateModelAABB(R3D_Model* model, float extraMargin);
 void R3D_GenTangents(R3D_Model* model);
 
 
-/* Transform Functions */
+
+/* [Objects] - Transform Functions */
 
 /**
  * @brief Creates a transform with identity matrix and an optional parent transform.

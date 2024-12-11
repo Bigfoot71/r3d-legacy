@@ -20,7 +20,7 @@
 #ifndef R3D_DETAIL_GL_QUAD_HPP
 #define R3D_DETAIL_GL_QUAD_HPP
 
-#include "../../GL.hpp"
+#include "../GL.hpp"
 
 namespace r3d {
 

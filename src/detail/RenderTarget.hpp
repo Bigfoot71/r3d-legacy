@@ -22,8 +22,8 @@
 
 #include "./GL.hpp"
 
-#include "./helper/GL/GLTexture.hpp"
-#include "./helper/GL/GLFramebuffer.hpp"
+#include "./GL/GLTexture.hpp"
+#include "./GL/GLFramebuffer.hpp"
 
 #include <raylib.h>
 #include <rlgl.h>

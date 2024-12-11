@@ -22,8 +22,8 @@
 
 #include "./GLTexture.hpp"
 
-#include "../../utils/Build.hpp"
-#include "../../GL.hpp"
+#include "../Build.hpp"
+#include "../GL.hpp"
 
 #include <initializer_list>
 #include <stdexcept>

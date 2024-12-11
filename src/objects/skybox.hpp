@@ -17,22 +17,104 @@
  *   3. This notice may not be removed or altered from any source distribution.
  */
 
-#include "r3d.h"
+#ifndef R3D_SKYBOX_HPP
+#define R3D_SKYBOX_HPP
 
 #include "detail/ShaderCodes.hpp"
 
-#include "./detail/Skybox.hpp"
-#include "./renderer.hpp"
+#include "../detail/GL.hpp"
+#include "../detail/GL/GLShader.hpp"
+#include "../detail/RL/RLTexture.hpp"
 
 #include <raylib.h>
 #include <raymath.h>
 #include <rlgl.h>
 
+#include <cassert>
+#include <memory>
+#include <string>
+
+// TODO: Integrate an automatic system to generate the BRDF LUT texture only once and load it on each startup
+// TODO: Do the same for irradiance and prefilter textures, but this time for each loaded environment map
+
+// NOTE: The implementation is in 'src/skybox.cpp'
+
 namespace r3d {
+
+class Skybox
+{
+    friend class Environment;
+
+public:
+    Skybox(const std::string& skyboxTexturePath, CubemapLayout layout);
+    Skybox(const std::string& hdrSkyboxTexturePath, int size);
+
+    ~Skybox();
+
+    void draw() const;
+
+    unsigned int getSkyboxCuebmapID() const {
+        return mCubemap.id;
+    }
+
+    unsigned int getIrradianceCubemapID() const {
+        return mIrradiance.id;
+    }
+
+    unsigned int getPrefilterCubemapID() const {
+        return mPrefilter.id;
+    }
+
+    unsigned int getBrdfLUTTextureID() const {
+        return sShared->texBrdfLUT.id;
+    }
+
+private:
+    RLTexture mCubemap;             ///< The cubemap texture representing the skybox.
+    RLTexture mIrradiance;          ///< The irradiance cubemap texture for diffuse lighting.
+    RLTexture mPrefilter;
+
+private:
+    struct SharedData
+    {
+        std::array<Matrix, 6> matCubeViews;
+
+        GLShader shaderSkybox;
+        GLShader shaderPrefilter;
+        GLShader shaderIrradianceConvolution;
+        GLShader shaderEquirectangularToCubemap;
+
+        RLTexture texBrdfLUT;
+
+        GLuint FBO;     ///< Used for texture generation
+        GLuint RBO;     ///< Render buffer for depth (FBO)
+
+        GLuint VBO;     ///< VBO of cube positions
+        GLuint EBO;     ///< EBO (elements) of the cube
+        GLuint VAO;     ///< VAO -> VBO + EBO
+
+        SharedData();
+        ~SharedData();
+
+        void generateBrdfLUT();
+    };
+
+private:
+    static inline std::unique_ptr<SharedData> sShared{};
+    static inline int sInstanceCounter{};
+
+private:
+    void load(const std::string& skyboxTexturePath, CubemapLayout layout);
+    void loadHDR(const std::string& hdrSkyboxTexturePath, int size);
+
+    void generateIrradiance();
+    void generatePrefilter();
+};
+
 
 /* Public r3d::Sykbox implementation */
 
-Skybox::Skybox(const std::string& skyboxTexturePath, CubemapLayout layout)
+inline Skybox::Skybox(const std::string& skyboxTexturePath, CubemapLayout layout)
 {
     if (sInstanceCounter++ == 0) {
         sShared = std::make_unique<SharedData>();
@@ -40,7 +122,7 @@ Skybox::Skybox(const std::string& skyboxTexturePath, CubemapLayout layout)
     load(skyboxTexturePath, layout);
 }
 
-Skybox::Skybox(const std::string& hdrSkyboxTexturePath, int size)
+inline Skybox::Skybox(const std::string& hdrSkyboxTexturePath, int size)
 {
     if (sInstanceCounter++ == 0) {
         sShared = std::make_unique<SharedData>();
@@ -48,14 +130,14 @@ Skybox::Skybox(const std::string& hdrSkyboxTexturePath, int size)
     loadHDR(hdrSkyboxTexturePath.c_str(), size);
 }
 
-Skybox::~Skybox()
+inline Skybox::~Skybox()
 {
     if (--sInstanceCounter == 0) {
         sShared.reset();
     }
 }
 
-void Skybox::draw() const
+inline void Skybox::draw() const
 {
     const GLShader& shader = sShared->shaderSkybox;
 
@@ -116,7 +198,7 @@ void Skybox::draw() const
 
 /* Private r3d::Skybox implementation */
 
-void Skybox::load(const std::string& skyboxTexturePath, CubemapLayout layout)
+inline void Skybox::load(const std::string& skyboxTexturePath, CubemapLayout layout)
 {
     // Load the cubemap texture from the image file
     Image img = LoadImage(skyboxTexturePath.c_str());
@@ -128,7 +210,7 @@ void Skybox::load(const std::string& skyboxTexturePath, CubemapLayout layout)
     generatePrefilter();
 }
 
-void Skybox::loadHDR(const std::string& hdrSkyboxTexturePath, int sizeFace)
+inline void Skybox::loadHDR(const std::string& hdrSkyboxTexturePath, int sizeFace)
 {
     // Generate the cubemap for the skybox
     {
@@ -208,7 +290,7 @@ void Skybox::loadHDR(const std::string& hdrSkyboxTexturePath, int sizeFace)
     generatePrefilter();
 }
 
-void Skybox::generateIrradiance()
+inline void Skybox::generateIrradiance()
 {
     int size = std::max(mCubemap.width / 16, 32);
 
@@ -273,7 +355,7 @@ void Skybox::generateIrradiance()
     mIrradiance.format = RL_PIXELFORMAT_UNCOMPRESSED_R32G32B32A32;
 }
 
-void Skybox::generatePrefilter()
+inline void Skybox::generatePrefilter()
 {
     // Create a cubemap texture to hold the HDR data
     glGenTextures(1, &mPrefilter.id);
@@ -340,7 +422,7 @@ void Skybox::generatePrefilter()
 
 /* Private r3d::Skybox::SharedData implementation */
 
-Skybox::SharedData::SharedData()
+inline Skybox::SharedData::SharedData()
     : shaderEquirectangularToCubemap(VS_CODE_CUBEMAP, FS_CODE_CUBEMAP_FROM_EQUIRECTANGULAR)
     , shaderIrradianceConvolution(VS_CODE_CUBEMAP, FS_CODE_IRRADIANCE_CONVOLUTION)
     , shaderPrefilter(VS_CODE_CUBEMAP, FS_CODE_PREFILTER)
@@ -434,7 +516,7 @@ Skybox::SharedData::SharedData()
     generateBrdfLUT();
 }
 
-Skybox::SharedData::~SharedData()
+inline Skybox::SharedData::~SharedData()
 {
     rlUnloadVertexBuffer(EBO);
     rlUnloadVertexBuffer(VBO);
@@ -444,7 +526,7 @@ Skybox::SharedData::~SharedData()
     rlUnloadFramebuffer(FBO);
 }
 
-void Skybox::SharedData::generateBrdfLUT()
+inline void Skybox::SharedData::generateBrdfLUT()
 {
     GLShader shaderBRDF(VS_CODE_BRDF, FS_CODE_BRDF);
 
@@ -481,23 +563,4 @@ void Skybox::SharedData::generateBrdfLUT()
 
 } // namespace r3d
 
-/* Public API */
-
-R3D_Skybox R3D_LoadSkybox(const char* fileName, CubemapLayout layout)
-{
-    return new r3d::Skybox(fileName, layout);
-}
-
-R3D_Skybox R3D_LoadSkyboxHDR(const char* fileName, int sizeFace)
-{
-    return new r3d::Skybox(fileName, sizeFace);
-}
-
-void R3D_UnloadSkybox(R3D_Skybox skybox)
-{
-    if (gRenderer && gRenderer->environment.world.skybox == skybox) {
-        gRenderer->environment.world.skybox = nullptr;
-    }
-
-    delete static_cast<r3d::Skybox*>(skybox);
-}
+#endif // R3D_SKYBOX_HPP

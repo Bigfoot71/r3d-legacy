@@ -20,8 +20,8 @@
 #ifndef R3D_DETAIL_GL_RENDERBUFFER_HPP
 #define R3D_DETAIL_GL_RENDERBUFFER_HPP
 
-#include "../../utils/Build.hpp"
-#include "../../GL.hpp"
+#include "../Build.hpp"
+#include "../GL.hpp"
 #include <utility>
 
 namespace r3d {

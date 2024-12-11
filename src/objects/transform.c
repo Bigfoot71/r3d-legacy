@@ -21,6 +21,8 @@
 
 #include <raymath.h>
 
+/* Public API */
+
 R3D_Transform R3D_CreateTransformIdentity(const R3D_Transform* parent)
 {
     return (R3D_Transform) {
@@ -35,20 +37,20 @@ R3D_Transform R3D_TransformFromMatrix(Matrix mat)
 {
     R3D_Transform transform;
 
-    // Extraire la position (éléments de la dernière colonne)
+    // Extract the position (elements from the last column)
     transform.position = (Vector3){ mat.m12, mat.m13, mat.m14 };
 
-    // Extraire l'échelle en mesurant la longueur des vecteurs colonne
+    // Extract the scale by measuring the length of the column vectors
     Vector3 scale;
     scale.x = Vector3Length((Vector3){ mat.m0, mat.m1, mat.m2 });
     scale.y = Vector3Length((Vector3){ mat.m4, mat.m5, mat.m6 });
     scale.z = Vector3Length((Vector3){ mat.m8, mat.m9, mat.m10 });
     transform.scale = scale;
 
-    // Supprimer l'échelle de la matrice pour extraire la rotation
+    // Remove the scale from the matrix to extract the rotation
     Matrix rotationMatrix = mat;
 
-    // Normaliser les vecteurs colonne pour enlever l'échelle
+    // Normalize the column vectors to remove the scale
     if (scale.x != 0) {
         rotationMatrix.m0 /= scale.x;
         rotationMatrix.m1 /= scale.x;
@@ -65,10 +67,10 @@ R3D_Transform R3D_TransformFromMatrix(Matrix mat)
         rotationMatrix.m10 /= scale.z;
     }
 
-    // Convertir la matrice de rotation en quaternion
+    // Convert the rotation matrix to a quaternion
     transform.rotation = QuaternionFromMatrix(rotationMatrix);
 
-    // Initialiser le parent à NULL
+    // Initialize the parent to NULL
     transform.parent = 0;
 
     return transform;

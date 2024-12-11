@@ -17,43 +17,51 @@
  *   3. This notice may not be removed or altered from any source distribution.
  */
 
-#ifndef R3D_DETAIL_RENDERER_HPP
-#define R3D_DETAIL_RENDERER_HPP
+#ifndef R3D_RENDERER_HPP
+#define R3D_RENDERER_HPP
 
 #include "r3d.h"
 
 #include "detail/ShaderCodes.hpp"
 
-#include "./helper/GL/GLFramebuffer.hpp"
-#include "./helper/RL/RLCamera3D.hpp"
-#include "./helper/RL/RLTexture.hpp"
-#include "./helper/RL/RLShader.hpp"
+#include "../detail/GL/GLFramebuffer.hpp"
+#include "../detail/RL/RLCamera3D.hpp"
+#include "../detail/RL/RLTexture.hpp"
+#include "../detail/RL/RLShader.hpp"
 
-#include "./helper/GL/GLTexture.hpp"
-#include "./helper/GL/GLShader.hpp"
-#include "./helper/GL/GLQuad.hpp"
+#include "../detail/GL/GLTexture.hpp"
+#include "../detail/GL/GLShader.hpp"
+#include "../detail/GL/GLQuad.hpp"
 
-#include "./utils/Frustum.hpp"
-#include "./utils/IDMan.hpp"
-#include "./utils/Math.hpp"
+#include "../detail/Frustum.hpp"
+#include "../detail/IDMan.hpp"
 
-#include "./RenderTarget.hpp"
-#include "./BatchMap.hpp"
-#include "./Skybox.hpp"
-#include "./Model.hpp"
-#include "./Light.hpp"
-#include "./GL.hpp"
-#include "rlgl.h"
+#include "../detail/RenderTarget.hpp"
+#include "../detail/BatchMap.hpp"
+#include "../detail/GL.hpp"
+
+#include "../objects/skybox.hpp"
+#include "../objects/model.hpp"
+#include "./lighting.hpp"
 
 #include <raylib.h>
 #include <raymath.h>
+#include <rlgl.h>
 
 #include <unordered_map>
 #include <cstdint>
 #include <vector>
 #include <cstdio>
 #include <cfloat>
+#include <memory>
 #include <map>
+
+/* Declaration of global Renderer instance */
+
+namespace r3d { class Renderer; }
+extern std::unique_ptr<r3d::Renderer> gRenderer;
+
+/* Renderer implementation */
 
 namespace r3d {
 
@@ -1479,4 +1487,4 @@ inline void Renderer::renderShadowMapOmni(const Light& light, const std::vector<
 
 } // namespace r3d
 
-#endif // R3D_DETAIL_RENDERER_HPP
+#endif // R3D_RENDERER_HPP

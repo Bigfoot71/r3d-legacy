@@ -20,7 +20,7 @@
 #ifndef R3D_DETAIL_GL_SHADER_HPP
 #define R3D_DETAIL_GL_SHADER_HPP
 
-#include "../../GL.hpp"
+#include "../GL.hpp"
 
 #include "./GLTexture.hpp"
 

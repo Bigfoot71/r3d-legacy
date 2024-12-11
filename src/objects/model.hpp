@@ -27,11 +27,10 @@
 
 #include <unordered_map>
 #include <utility>
+#include <cassert>
 #include <vector>
 #include <string>
 #include <span>
-
-// NOTE: The implementation is in 'src/model.cpp'
 
 namespace r3d {
 
@@ -99,6 +98,66 @@ struct Model
 
     void updateAnimationBones(const struct Animation& anim, int frame) const;
 };
+
+/* Public implementation */
+
+
+inline Model::~Model()
+{
+    for (const auto& surface : surfaces) {
+        UnloadMesh(surface.mesh);
+    }
+
+    if (!bones.empty()) {
+        std::free(bones.data());
+    }
+
+    if (!bindPose.empty()) {
+        std::free(bindPose.data());
+    }
+}
+
+inline void Model::updateAnimationBones(const Animation& anim, int frame) const
+{
+    if ((anim.frameCount > 0) && (anim.bones != nullptr) && (anim.framePoses != nullptr)) {
+        if (frame >= anim.frameCount) {
+            frame = frame % anim.frameCount;
+        }
+
+        for (auto& surface : surfaces) {
+            if (surface.mesh.boneMatrices) {
+                assert(surface.mesh.boneCount == anim.boneCount);
+
+                for (int boneId = 0; boneId < surface.mesh.boneCount; boneId++) {
+                    Vector3 inTranslation = bindPose[boneId].translation;
+                    Quaternion inRotation = bindPose[boneId].rotation;
+                    Vector3 inScale = bindPose[boneId].scale;
+
+                    Vector3 outTranslation = anim.framePoses[frame][boneId].translation;
+                    Quaternion outRotation = anim.framePoses[frame][boneId].rotation;
+                    Vector3 outScale = anim.framePoses[frame][boneId].scale;
+
+                    Vector3 invTranslation = Vector3RotateByQuaternion(Vector3Negate(inTranslation), QuaternionInvert(inRotation));
+                    Quaternion invRotation = QuaternionInvert(inRotation);
+                    Vector3 invScale = Vector3Divide((Vector3){ 1.0f, 1.0f, 1.0f }, inScale);
+
+                    Vector3 boneTranslation = Vector3Add(
+                        Vector3RotateByQuaternion(Vector3Multiply(outScale, invTranslation),
+                        outRotation), outTranslation);
+                    Quaternion boneRotation = QuaternionMultiply(outRotation, invRotation);
+                    Vector3 boneScale = Vector3Multiply(outScale, invScale);
+
+                    Matrix boneMatrix = MatrixMultiply(MatrixMultiply(
+                        QuaternionToMatrix(boneRotation),
+                        MatrixTranslate(boneTranslation.x, boneTranslation.y, boneTranslation.z)),
+                        MatrixScale(boneScale.x, boneScale.y, boneScale.z));
+
+                    surface.mesh.boneMatrices[boneId] = boneMatrix;
+                }
+            }
+        }
+    }
+}
 
 } // namespace r3d
 

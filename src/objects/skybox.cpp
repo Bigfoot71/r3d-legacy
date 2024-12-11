@@ -17,15 +17,32 @@
  *   3. This notice may not be removed or altered from any source distribution.
  */
 
-#ifndef R3D_RENDERER_HPP
-#define R3D_RENDERER_HPP
+#include "r3d.h"
 
-// This header is used to share the renderer instance between sources
-// It is instantiated in 'R3D_Init()' in the 'core.cpp' file
+#include "../core/renderer.hpp"
+#include "./skybox.hpp"
 
-#include "./detail/Renderer.hpp"
-#include <memory>
+#include <raylib.h>
+#include <raymath.h>
+#include <rlgl.h>
 
-extern std::unique_ptr<r3d::Renderer> gRenderer;
+/* Public API */
 
-#endif // R3D_RENDERER_HPP
+R3D_Skybox R3D_LoadSkybox(const char* fileName, CubemapLayout layout)
+{
+    return new r3d::Skybox(fileName, layout);
+}
+
+R3D_Skybox R3D_LoadSkyboxHDR(const char* fileName, int sizeFace)
+{
+    return new r3d::Skybox(fileName, sizeFace);
+}
+
+void R3D_UnloadSkybox(R3D_Skybox skybox)
+{
+    if (gRenderer && gRenderer->environment.world.skybox == skybox) {
+        gRenderer->environment.world.skybox = nullptr;
+    }
+
+    delete static_cast<r3d::Skybox*>(skybox);
+}
