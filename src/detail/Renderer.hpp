@@ -137,9 +137,10 @@ class Renderer
 {
 public:
     R3D_Environment environment;    ///< Environment settings for the renderer.
-    bool performFrustumCulling;     ///< Flag to specify whether frustum culling should be performed for visible scene objects.
-    bool blitAspectKeep;            ///< Flag to maintain aspect ratio during blitting.
-    bool blitLinear;                ///< Flag to enable linear blitting.
+    int flags;                      /**< Copies of the flags assigned during initialization,
+                                     *   may be modified during execution, except for flags that
+                                     *   require specific data initialization, such as debug flags.
+                                     */
 
 public:
     /**
@@ -412,9 +413,7 @@ inline Renderer::Renderer(int internalWidth, int internalHeight, int flags)
             .ambient        = DARKGRAY
         }
     })
-    , performFrustumCulling(!(flags & R3D_FLAG_NO_FRUSTUM_CULLING))
-    , blitAspectKeep(flags & R3D_FLAG_ASPECT_KEEP)
-    , blitLinear(flags & R3D_FLAG_BLIT_LINEAR)
+    , flags(flags)
     , mTargetScene(mInternalWidth, mInternalHeight)
     , mTargetPostFX(mInternalWidth, mInternalHeight)
     , mTargetBlur({
@@ -615,7 +614,7 @@ inline void Renderer::setCamera(const Camera3D& camera)
     // Calculates the desired aspect ratio for the projection matrix
 
     float aspect = 1.0f;
-    if (blitAspectKeep) {
+    if (flags & R3D_FLAG_ASPECT_KEEP) {
         aspect = static_cast<float>(mInternalWidth) / mInternalHeight;
     } else {
         aspect = static_cast<float>(GetScreenWidth()) / GetScreenHeight();
@@ -628,7 +627,7 @@ inline void Renderer::setCamera(const Camera3D& camera)
 
     // Computes the camera's frustum if necessary
 
-    if (performFrustumCulling) {
+    if (!(flags & R3D_FLAG_NO_FRUSTUM_CULLING)) {
         mFrustumCamera = Frustum(MatrixMultiply(mMatCameraView, mMatCameraProj));
     }
 }
@@ -665,7 +664,7 @@ inline void Renderer::draw(const R3D_Model& model, const Vector3& position, cons
     // disabled using the initialization flag 'R3D_FLAG_NO_FRUSTUM_CULLING'.
 
     bool drawSurfaceScene = true;
-    if (performFrustumCulling && model.shadow != R3D_CAST_SHADOW_ONLY) {
+    if (!(flags & R3D_FLAG_NO_FRUSTUM_CULLING || model.shadow == R3D_CAST_SHADOW_ONLY)) {
         drawSurfaceScene = mFrustumCamera.aabbIn(globalAABB);
     }
 
@@ -788,7 +787,7 @@ inline void Renderer::present()
     {
         /* Setup view port and clear target scene framebuffer */
 
-        if (blitAspectKeep) {
+        if (flags & R3D_FLAG_ASPECT_KEEP) {
             glViewport(0, 0, mInternalWidth, mInternalHeight);
         }
 
@@ -963,7 +962,9 @@ inline void Renderer::present()
 
     /* Blit result to the main framebuffer */
 
-    if (blitAspectKeep) {
+    bool blitLinear = R3D_FLAG_BLIT_LINEAR;
+
+    if (flags & R3D_FLAG_ASPECT_KEEP) {
         mTargetPostFX.blitAspectKeep(GLAttachement::COLOR_0, false, blitLinear);
         mTargetScene.blitAspectKeep(GLAttachement::NONE, true, false);
     } else {

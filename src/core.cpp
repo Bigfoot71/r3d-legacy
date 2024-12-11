@@ -58,13 +58,17 @@ void R3D_UpdateInternalResolution(int width, int height)
 
 void R3D_SetBlitMode(bool blitAspectKeep, bool blitLinear)
 {
-    gRenderer->blitAspectKeep = blitAspectKeep;
-    gRenderer->blitLinear = blitLinear;
+    if (blitAspectKeep) gRenderer->flags |= R3D_FLAG_ASPECT_KEEP;
+    else gRenderer->flags &= ~R3D_FLAG_ASPECT_KEEP;
+
+    if (blitLinear) gRenderer->flags |= R3D_FLAG_BLIT_LINEAR;
+    else gRenderer->flags &= ~R3D_FLAG_BLIT_LINEAR;
 }
 
 void R3D_SetFrustumCulling(bool enabled)
 {
-    gRenderer->performFrustumCulling = enabled;
+    if (enabled) gRenderer->flags &= ~R3D_FLAG_NO_FRUSTUM_CULLING;
+    else gRenderer->flags |= R3D_FLAG_NO_FRUSTUM_CULLING;
 }
 
 void R3D_Begin(Camera3D camera)
