@@ -1,3 +1,22 @@
+/**
+ * Copyright (c) 2024 Le Juez Victor
+ *
+ * This software is provided "as-is", without any express or implied warranty. In no event 
+ * will the authors be held liable for any damages arising from the use of this software.
+ *
+ * Permission is granted to anyone to use this software for any purpose, including commercial 
+ * applications, and to alter it and redistribute it freely, subject to the following restrictions:
+ *
+ *   1. The origin of this software must not be misrepresented; you must not claim that you 
+ *   wrote the original software. If you use this software in a product, an acknowledgment 
+ *   in the product documentation would be appreciated but is not required.
+ *
+ *   2. Altered source versions must be plainly marked as such, and must not be misrepresented
+ *   as being the original software.
+ *
+ *   3. This notice may not be removed or altered from any source distribution.
+ */
+
 #ifndef R3D_DETAIL_MATERIAL_SHADER_HPP
 #define R3D_DETAIL_MATERIAL_SHADER_HPP
 
@@ -16,6 +35,7 @@
 #include <cstring>
 #include <cstdlib>
 #include <array>
+#include <utility>
 
 namespace r3d {
 
@@ -44,6 +64,17 @@ public:
      * @param config Configuration parameters for the material shader.
      */
     ShaderMaterial(R3D_MaterialShaderConfig config);
+
+    // Destructor for ShaderMaterial
+    ~ShaderMaterial();
+
+    // Delete the copy constructor and assignment operator
+    ShaderMaterial(const ShaderMaterial&) = delete;
+    ShaderMaterial& operator=(const ShaderMaterial&) = delete;
+
+    // Move constructor and assignment operator to allow moving of ShaderMaterial objects
+    ShaderMaterial(ShaderMaterial&& other) noexcept;
+    ShaderMaterial& operator=(ShaderMaterial&& other) noexcept;
 
     /**
      * @brief Begins the shader program by activating it for rendering.
@@ -391,6 +422,74 @@ inline ShaderMaterial::ShaderMaterial(R3D_MaterialShaderConfig config)
         mLights[i].type = Uniform<int, GL_LOW_INT>(mShaderID, TextFormat("uLights[%i].type", i));
         mLights[i].enabled = Uniform<bool, GL_BOOL>(mShaderID, TextFormat("uLights[%i].enabled", i));
     }
+}
+
+inline ShaderMaterial::~ShaderMaterial()
+{
+    if (mShaderID > 0) {
+        glDeleteProgram(mShaderID);
+    }
+}
+
+inline ShaderMaterial::ShaderMaterial(ShaderMaterial&& other) noexcept
+    : mConfig(other.mConfig)
+    , mShaderID(std::exchange(other.mShaderID, 0))
+    , mLights(other.mLights)
+    , mMatNormal(other.mMatNormal)
+    , mMatModel(other.mMatModel)
+    , mMatMVP(other.mMatMVP)
+    , mBloomHdrThreshold(other.mBloomHdrThreshold)
+    , mColAmbient(other.mColAmbient)
+    , mViewPos(other.mViewPos)
+    , mTexAlbedo(other.mTexAlbedo)
+    , mColAlbedo(other.mColAlbedo)
+    , mTexMetalness(other.mTexMetalness)
+    , mValMetalness(other.mValMetalness)
+    , mTexRoughness(other.mTexRoughness)
+    , mValRoughness(other.mValRoughness)
+    , mTexEmission(other.mTexEmission)
+    , mValEmissionEnergy(other.mValEmissionEnergy)
+    , mColEmission(other.mColEmission)
+    , mTexNormal(other.mTexNormal)
+    , mTexAO(other.mTexAO)
+    , mValAOLightAffect(other.mValAOLightAffect)
+    , mCubeIrradiance(other.mCubeIrradiance)
+    , mCubePrefilter(other.mCubePrefilter)
+    , mTexBrdfLUT(other.mTexBrdfLUT)
+    , mQuatSkybox(other.mQuatSkybox)
+    , mHasSkybox(other.mHasSkybox)
+{ }
+
+inline ShaderMaterial& ShaderMaterial::operator=(ShaderMaterial&& other) noexcept {
+    if (this != &other) {
+        mConfig = other.mConfig;
+        mShaderID = std::exchange(other.mShaderID, 0);
+        mLights = other.mLights;
+        mMatNormal = other.mMatNormal;
+        mMatModel = other.mMatModel;
+        mMatMVP = other.mMatMVP;
+        mBloomHdrThreshold = other.mBloomHdrThreshold;
+        mColAmbient = other.mColAmbient;
+        mViewPos = other.mViewPos;
+        mTexAlbedo = other.mTexAlbedo;
+        mColAlbedo = other.mColAlbedo;
+        mTexMetalness = other.mTexMetalness;
+        mValMetalness = other.mValMetalness;
+        mTexRoughness = other.mTexRoughness;
+        mValRoughness = other.mValRoughness;
+        mTexEmission = other.mTexEmission;
+        mValEmissionEnergy = other.mValEmissionEnergy;
+        mColEmission = other.mColEmission;
+        mTexNormal = other.mTexNormal;
+        mTexAO = other.mTexAO;
+        mValAOLightAffect = other.mValAOLightAffect;
+        mCubeIrradiance = other.mCubeIrradiance;
+        mCubePrefilter = other.mCubePrefilter;
+        mTexBrdfLUT = other.mTexBrdfLUT;
+        mQuatSkybox = other.mQuatSkybox;
+        mHasSkybox = other.mHasSkybox;
+    }
+    return *this;
 }
 
 inline void ShaderMaterial::begin() const
