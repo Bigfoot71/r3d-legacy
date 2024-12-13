@@ -360,60 +360,88 @@ typedef struct {
     void *internal;                  /**< Internal data used by the rendering engine. Should not be modified directly. */
 } R3D_Model;
 
+/**
+ * @brief Represents a keyframe in an interpolation curve.
+ * 
+ * A keyframe contains two values: the time at which the keyframe occurs and the value of the interpolation at that time.
+ * The time is normalized between 0.0 and 1.0, where 0.0 represents the start of the curve and 1.0 represents the end.
+ */
 typedef struct {
-    float time;   // Normalized time (0.0 to 1.0)
-    float value;  // Value at this keyframe
+    float time;         /**< Normalized time of the keyframe, ranging from 0.0 to 1.0. */
+    float value;        /**< The value of the interpolation at this keyframe. */
 } R3D_Keyframe;
 
+/**
+ * @brief Represents an interpolation curve composed of keyframes.
+ * 
+ * This structure contains an array of keyframes and metadata about the array, such as the current number of keyframes 
+ * and the allocated capacity. The keyframes define a curve that can be used for smooth interpolation between values 
+ * over a normalized time range (0.0 to 1.0).
+ */
 typedef struct {
-    R3D_Keyframe *keyframes;    // Dynamic array of keyframes
-    unsigned int capacity;      // Allocated size of the array
-    unsigned int size;          // Current number of keyframes
+    R3D_Keyframe *keyframes;    /**< Dynamic array of keyframes defining the interpolation curve. */
+    unsigned int capacity;      /**< Allocated size of the keyframes array. */
+    unsigned int size;          /**< Current number of keyframes in the array. */
 } R3D_InterpolationCurve;
 
+/**
+ * @brief Represents a CPU-based particle system with various properties and settings.
+ * 
+ * This structure contains configuration data for a particle system, such as mesh information, initial properties,
+ * curves for controlling properties over time, and settings for shadow casting, emission rate, and more.
+ */
 typedef struct {
 
-    void *internal;
+    void *internal;                     /**< Internal data for the particle system, used by the system's implementation. */
 
-    R3D_Surface surface;        ///< Mesh mesh, R3D_Material material
+    R3D_Surface surface;                /**< The mesh and material for the particle system. */
 
-    Vector3 position;
-    Vector3 gravity;
+    Vector3 position;                   /**< The initial position of the particle system. Default: (0, 0, 0). */
+    Vector3 gravity;                    /**< The gravity applied to the particles. Default: (0, -9.81, 0). */
 
-    Vector3 initialScale;
-    float scaleVariance;
+    Vector3 initialScale;               /**< The initial scale of the particles. Default: (1, 1, 1). */
+    float scaleVariance;                /**< The variance in particle scale. Default: 0.0f. */
 
-    Vector3 initialRotation;
-    Vector3 rotationVariance;
+    Vector3 initialRotation;            /**< The initial rotation of the particles in Euler angles (degrees). Default: (0, 0, 0). */
+    Vector3 rotationVariance;           /**< The variance in particle rotation in Euler angles (degrees). Default: (0, 0, 0). */
 
-    Color initialColor;
-    Color colorVariance;
+    Color initialColor;                 /**< The initial color of the particles. Default: WHITE. */
+    Color colorVariance;                /**< The variance in particle color. Default: BLANK. */
 
-    Vector3 initialVelocity;
-    Vector3 velocityVariance;
+    Vector3 initialVelocity;            /**< The initial velocity of the particles. Default: (0, 0, 0). */
+    Vector3 velocityVariance;           /**< The variance in particle velocity. Default: (0, 0, 0). */
 
-    Vector3 initialAngularVelocity;
-    Vector3 angularVelocityVariance;
+    Vector3 initialAngularVelocity;     /**< The initial angular velocity of the particles in Euler angles (degrees). Default: (0, 0, 0). */
+    Vector3 angularVelocityVariance;    /**< The variance in angular velocity. Default: (0, 0, 0). */
 
-    float lifetime;
-    float lifetimeVariance;
+    float lifetime;                     /**< The lifetime of the particles in seconds. Default: 1.0f. */
+    float lifetimeVariance;             /**< The variance in lifetime in seconds. Default: 0.0f. */
 
-    float emissionRate;                 ///< Nombre de particule par secondes
-    float spreadAngle;
+    float emissionRate;                 /**< The rate of particle emission in particles per second. Default: 10.0f. */
+    float spreadAngle;                  /**< The angle of propagation of the particles in a cone (degrees). Default: 0.0f. */
 
-    R3D_InterpolationCurve *scaleOverLifetime;              ///< Curve controlling scale evolution (e.g., easing functions)
-    R3D_InterpolationCurve *speedOverLifetime;              ///< Curve controlling speed evolution
-    R3D_InterpolationCurve *opacityOverLifetime;            ///< Curve controlling opacity evolution
-    R3D_InterpolationCurve *angularVelocityOverLifetime;    ///< Curve controlling angular velocity evolution
+    R3D_InterpolationCurve *scaleOverLifetime;              /**< Curve controlling the scale evolution of the particles over their lifetime. Default: NULL. */
+    R3D_InterpolationCurve *speedOverLifetime;              /**< Curve controlling the speed evolution of the particles over their lifetime. Default: NULL. */
+    R3D_InterpolationCurve *opacityOverLifetime;            /**< Curve controlling the opacity evolution of the particles over their lifetime. Default: NULL. */
+    R3D_InterpolationCurve *angularVelocityOverLifetime;    /**< Curve controlling the angular velocity evolution of the particles over their lifetime. Default: NULL. */
 
-    BoundingBox aabb;
+    BoundingBox aabb;               /**< The bounding box of the particle system. Default: ((-10, -10, -10), (10, 10, 10)). */
 
-    R3D_CastShadow shadow;
-    bool autoEmission;
+    R3D_CastShadow shadow;           /**< The shadow casting mode for the particle system. Default: R3D_CAST_OFF. */
+    bool autoEmission;               /**< Indicates whether particle emission is automatic when calling `R3D_UpdateEmitterParticleCPU`.
+                                      *   If false, emission is manual using `R3D_EmitParticleCPU`. Default: true.
+                                      */
 
 } R3D_ParticleSystemCPU;
 
+/**
+ * @brief Type definition for a light identifier.
+ * 
+ * This type represents a unique identifier for a light in the system. It is used to refer to a specific light
+ * source within a collection of lights in the rendering engine.
+ */
 typedef unsigned int R3D_Light;
+
 
 #ifdef __cplusplus
 extern "C" {
