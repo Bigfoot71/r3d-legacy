@@ -70,6 +70,16 @@ void R3D_SetFrustumCulling(bool enabled)
     else gRenderer->flags |= R3D_FLAG_NO_FRUSTUM_CULLING;
 }
 
+void R3D_SetDepthSortingOrder(R3D_DepthSortingOrder order)
+{
+    gRenderer->depthSortingOrder = order;
+}
+
+R3D_DepthSortingOrder R3D_GetDepthSortingOrder(void)
+{
+    return gRenderer->depthSortingOrder;
+}
+
 void R3D_SetRenderTarget(const RenderTexture* target)
 {
     gRenderer->customRenderTarget = target;

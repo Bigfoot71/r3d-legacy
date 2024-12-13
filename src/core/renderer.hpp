@@ -45,6 +45,7 @@
 #include "../objects/model.hpp"
 #include "./lighting.hpp"
 
+#include <algorithm>
 #include <raylib.h>
 #include <raymath.h>
 #include <rlgl.h>
@@ -152,7 +153,7 @@ public:
             const Mesh *mesh;           ///< Pointer to the mesh to be rendered.
             R3D_Material material;      ///< Material copy for rendering the same mesh with different parameters.
         } surface;                      ///< Surface information for the draw call.
-        const Matrix transform;         ///< Transformation matrix for the draw call.
+        Matrix transform;               ///< Transformation matrix for the draw call.
         ShaderLightArray lights;        ///< Array of light pointers influencing this draw call.
     };
 
@@ -188,6 +189,18 @@ public:
      * @param shader The shader material to use for rendering.
      */
     void draw(ShaderMaterial& shader) const;
+
+    /**
+     * @brief Retrieves the transformation matrix of the surface, if applicable.
+     *
+     * This method returns a pointer to the transformation matrix of the surface associated
+     * with the draw call. If the draw call represents a particle system or no surface is
+     * associated, the method returns `nullptr`.
+     *
+     * @return A pointer to the transformation matrix if the draw call represents a surface; 
+     *         otherwise, `nullptr`.
+     */
+    const Matrix* surfaceTransform() const;
 
 private:
     /**
@@ -256,6 +269,7 @@ class Renderer
 public:
     R3D_Environment environment;                ///< Environment settings for the renderer.
     const RenderTexture *customRenderTarget;    ///< Custom raylib render target to which the blit is performed instead of the main framebuffer.
+    R3D_DepthSortingOrder depthSortingOrder;    ///< Specifies the deoth sorting order of surfaces before rendering.
 
     int flags;  /**< Copies of the flags assigned during initialization,
                  *   may be modified during execution, except for flags that
@@ -531,6 +545,7 @@ inline Renderer::Renderer(int internalWidth, int internalHeight, int flags)
         }
     })
     , customRenderTarget(nullptr)
+    , depthSortingOrder(R3D_DEPTH_SORT_DISABLED)
     , flags(flags)
     , mTargetScene(mInternalWidth, mInternalHeight)
     , mTargetPostFX(mInternalWidth, mInternalHeight)
@@ -952,6 +967,33 @@ inline void Renderer::present()
 
     rlMatrixMode(RL_MODELVIEW);
     rlLoadIdentity();
+
+    /* Sorting scene depth if necessary */
+
+    switch (depthSortingOrder) {
+        case R3D_DEPTH_SORT_FAR_TO_NEAR: {
+            for (auto& [_, batch] : mSceneBatches) {
+                std::sort(batch.begin(), batch.end(), [](const DrawCall_Scene& a, const DrawCall_Scene& b) {
+                    if (a.surfaceTransform() && b.surfaceTransform()) {
+                        return a.surfaceTransform()->m14 > b.surfaceTransform()->m14;
+                    }
+                    return a.surfaceTransform() != nullptr;
+                });
+            }
+        } break;
+        case R3D_DEPTH_SORT_NEAR_TO_FAR: {
+            for (auto& [_, batch] : mSceneBatches) {
+                std::sort(batch.begin(), batch.end(), [](const DrawCall_Scene& a, const DrawCall_Scene& b) {
+                    if (a.surfaceTransform() && b.surfaceTransform()) {
+                        return a.surfaceTransform()->m14 < b.surfaceTransform()->m14;
+                    }
+                    return a.surfaceTransform() != nullptr;
+                });
+            }
+        } break;
+        default:
+            break;
+    }
 
     /* Render scene */
 
@@ -1495,6 +1537,13 @@ inline void DrawCall_Scene::draw(ShaderMaterial& shader) const
         case 0: drawMesh(shader); break;
         case 1: drawParticlesCPU(shader); break;
     }
+}
+
+inline const Matrix* DrawCall_Scene::surfaceTransform() const {
+    if (mCall.index() == 0) {
+        return &std::get<0>(mCall).transform;
+    }
+    return nullptr;
 }
 
 inline void DrawCall_Scene::drawMesh(ShaderMaterial& shader) const

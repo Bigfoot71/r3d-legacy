@@ -277,7 +277,7 @@ void R3D_UpdateParticleEmitterCPUAABB(R3D_ParticleSystemCPU* system)
         aabbMax.z = std::max({aabbMax.z, midPosition.z, futurePosition.z});
     }
 
-    // Clear any previous state or data in the emitter (if necessary)
+    // Clear any previous state or data in the emitter
     emitter.clear();
 
     // Update the particle system's AABB with the calculated bounds

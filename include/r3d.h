@@ -63,6 +63,20 @@ typedef enum {
 } R3D_Flags;
 
 /**
+ * @enum R3D_DepthSortingOrder
+ * @brief Specifies the sorting order for depth values in 3D rendering.
+ *
+ * This enumeration is used to define the sorting order when rendering 3D objects, 
+ * specifically for how objects are ordered based on their depth in a scene.
+ * The sorting order affects how objects are drawn relative to one another.
+ */
+typedef enum {
+    R3D_DEPTH_SORT_DISABLED,        /**< Depth sorting is disabled, objects are rendered in the order they are processed. */
+    R3D_DEPTH_SORT_FAR_TO_NEAR,     /**< Objects are sorted from farthest to nearest, useful for handling transparency or proper rendering order in some cases. */
+    R3D_DEPTH_SORT_NEAR_TO_FAR      /**< Objects are sorted from nearest to farthest, typically used for depth tests in opaque object rendering. */
+} R3D_DepthSortingOrder;
+
+/**
  * @enum R3D_Bloom
  * @brief Defines the types of bloom effects available for rendering.
  * 
@@ -565,6 +579,34 @@ void R3D_SetBlitMode(bool blitAspectKeep, bool blitLinear);
  *       an object should be rendered in their shadow maps.
  */
 void R3D_SetFrustumCulling(bool enabled);
+
+/**
+ * @brief Sets the depth sorting order for 3D rendering.
+ *
+ * This function configures how objects are sorted based on their depth values 
+ * in the scene. The depth sorting order determines the sequence in which 
+ * objects are rendered, which can impact visual correctness, especially in 
+ * scenes with transparency or overlapping geometry.
+ *
+ * @param order The desired depth sorting order of type R3D_DepthSortingOrder.
+ *              - `R3D_DEPTH_SORT_DISABLED`: Depth sorting is turned off.
+ *              - `R3D_DEPTH_SORT_FAR_TO_NEAR`: Objects are rendered from the farthest to the nearest.
+ *              - `R3D_DEPTH_SORT_NEAR_TO_FAR`: Objects are rendered from the nearest to the farthest.
+ *
+ * @note The default value is `R3D_DEPTH_SORT_DISABLED`.
+ */
+void R3D_SetDepthSortingOrder(R3D_DepthSortingOrder order);
+
+/**
+ * @brief Retrieves the current depth sorting order.
+ *
+ * This function returns the current depth sorting configuration used during
+ * 3D rendering. The sorting order affects how objects are rendered relative
+ * to their depth in the scene.
+ *
+ * @return The current depth sorting order of type R3D_DepthSortingOrder.
+ */
+R3D_DepthSortingOrder R3D_GetDepthSortingOrder(void);
 
 /**
  * @brief Sets the render target for the R3D rendering process.
