@@ -682,7 +682,18 @@ inline void Renderer::drawModel(const R3D_Model& model, const Vector3& position,
     transform = MatrixMultiply(transform, R3D_TransformToGlobal(&model.transform));
     transform = MatrixMultiply(transform, rlGetMatrixTransform());
 
-    const Vector3 modelPosition = Vector3Add(model.transform.position, position);
+    const Vector3 modelPosition = {
+        transform.m12,
+        transform.m13,
+        transform.m14
+    };
+
+    if (model.billboard != R3D_BILLBOARD_DISABLED) {
+        Matrix billboardRotation = getBillboardRotationMatrix(
+            model.billboard, modelPosition, mCamera.position
+        );
+        transform = MatrixMultiply(billboardRotation, transform);
+    }
 
     // Retrieves the model's bounding box transformed according to the previously obtained transformation matrix.
 
@@ -1511,6 +1522,14 @@ inline void DrawCall_Scene::drawParticlesCPU(ShaderMaterial& shader) const
             ),
             MatrixTranslate(particle.position.x, particle.position.y, particle.position.z)
         );
+
+        if (call.system->billboard != R3D_BILLBOARD_DISABLED) {
+            Vector3 modelPos = { transform.m12, transform.m13, transform.m14 };
+            Matrix billboardRotation = getBillboardRotationMatrix(
+                call.system->billboard, modelPos, gRenderer->mCamera.position
+            );
+            transform = MatrixMultiply(billboardRotation, transform);
+        }
 
         call.system->surface.material.albedo.color = (Color) {
             static_cast<uint8_t>((baseColor.r * particle.color.r) / 255),

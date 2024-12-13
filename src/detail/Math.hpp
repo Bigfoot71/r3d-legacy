@@ -20,7 +20,11 @@
 #ifndef R3D_PRIV_UTILS_MATH_HPP
 #define R3D_PRIV_UTILS_MATH_HPP
 
+#include "r3d.h"
+
 #include <raylib.h>
+#include <raymath.h>
+
 #include <cstdlib>
 
 namespace r3d {
@@ -57,6 +61,75 @@ inline int getCubeMapFace(const Vector3& direction)
     } else {
         return (direction.z > 0) ? 4 : 5;  // +Z or -Z
     }
+}
+
+/**
+ * @brief Computes a billboard rotation matrix to align a 3D object with the camera.
+ *
+ * This function generates a rotation matrix that aligns a 3D object (the "billboard") 
+ * towards the camera based on the specified billboard mode. Two modes are supported:
+ * - `R3D_BILLBOARD_ENABLED`: The object fully faces the camera, rotating on all axes.
+ * - `R3D_BILLBOARD_Y_AXIS`: The object is constrained to rotate only around the Y-axis, 
+ *   which is commonly used for objects that should remain upright (e.g., characters or signs).
+ *
+ * @param mode The billboard mode to use (e.g., `R3D_BILLBOARD_ENABLED` or `R3D_BILLBOARD_Y_AXIS`).
+ * @param modelPos The position of the 3D object (billboard) in the world.
+ * @param viewPos The position of the camera in the world.
+ * @return A rotation matrix that aligns the object to face the camera based on the specified mode.
+ */
+inline Matrix getBillboardRotationMatrix(R3D_BillboardMode mode, const Vector3 modelPos, const Vector3& viewPos)
+{
+    Matrix billboardRotation = MatrixIdentity();
+
+    switch (mode) {
+        case R3D_BILLBOARD_ENABLED: {
+            // Full billboard: faces the camera on all axes
+
+            // Compute direction from the model to the camera
+            Vector3 toCamera = Vector3Subtract(viewPos, modelPos);
+            toCamera = Vector3Normalize(toCamera);
+
+            // Create a "look-at" alignment using the camera direction
+            Vector3 up = { 0.0f, 1.0f, 0.0f }; // Global up axis
+            Vector3 right = Vector3Normalize(Vector3CrossProduct(up, toCamera)); // X-axis of the billboard
+            up = Vector3CrossProduct(toCamera, right); // Recalculate the Y-axis
+
+            // Build the rotation matrix using the aligned axes
+            billboardRotation = {
+                right.x, up.x, toCamera.x, 0.0f,
+                right.y, up.y, toCamera.y, 0.0f,
+                right.z, up.z, toCamera.z, 0.0f,
+                0.0f,    0.0f,     0.0f,   1.0f
+            };
+        } break;
+
+        case R3D_BILLBOARD_Y_AXIS: {
+            // Y-axis constrained billboard: rotates only around the Y-axis
+
+            // Compute direction from the model to the camera, projected on the XZ plane
+            Vector3 toCamera = Vector3Subtract(viewPos, modelPos);
+            toCamera.y = 0.0f; // Ignore the Y component
+            toCamera = Vector3Normalize(toCamera);
+
+            // Compute the X-axis
+            Vector3 up = { 0.0f, 1.0f, 0.0f }; // Global up axis (Y-axis)
+            Vector3 right = Vector3CrossProduct(up, toCamera);
+
+            // Build the rotation matrix
+            billboardRotation = {
+                right.x, up.x, toCamera.x, 0.0f,
+                right.y, up.y, toCamera.y, 0.0f,
+                right.z, up.z, toCamera.z, 0.0f,
+                0.0f,    0.0f,     0.0f,   1.0f
+            };
+        } break;
+
+        default:
+            // If no valid mode is provided, return the identity matrix
+            break;
+    }
+
+    return billboardRotation;
 }
 
 } // namespace r3d

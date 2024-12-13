@@ -1,3 +1,4 @@
+#include "raylib.h"
 #include <r3d.h>
 
 #ifndef R3D_ASSETS_PATH
@@ -9,22 +10,36 @@ int main(void)
     InitWindow(800, 600, "R3D - Particles");
     SetTargetFPS(60);
 
+    Mesh sphere = GenMeshSphere(0.1f, 16, 32);
+
     R3D_Init();
 
-    Mesh sphere = GenMeshSphere(0.1f, 16, 32);
-    R3D_Material material = R3D_CreateMaterial(R3D_GetDefaultMaterialConfig());
+    R3D_SetEnvWorldBackground(BLACK);
+    R3D_SetEnvWorldAmbient(BLACK);
+
+    R3D_MaterialConfig config = R3D_CreateMaterialConfig(
+        R3D_DIFFUSE_BURLEY, R3D_SPECULAR_SCHLICK_GGX,
+        R3D_BLEND_ADDITIVE, R3D_CULL_BACK,
+        R3D_MATERIAL_FLAG_MAP_EMISSION
+    );
+
+    R3D_Material material = R3D_CreateMaterial(config);
+    material.emission.texture = *R3D_GetDefaultTextureWhite();
+    material.emission.color = (Color) { 255, 0, 0 };
+    material.emission.energy = 1.0f;
 
     R3D_InterpolationCurve curve = R3D_LoadInterpolationCurve(3);
     R3D_AddKeyframe(&curve, 0.0f, 0.0f);
     R3D_AddKeyframe(&curve, 0.5f, 1.0f);
     R3D_AddKeyframe(&curve, 1.0f, 0.0f);
 
-    R3D_ParticleSystemCPU *particles = R3D_LoadParticleEmitterCPU(&sphere, &material, 128);
+    R3D_ParticleSystemCPU *particles = R3D_LoadParticleEmitterCPU(&sphere, &material, 512);
     particles->initialVelocity = (Vector3) { 0, 10.0f, 0 };
+    particles->billboard = R3D_BILLBOARD_DISABLED;
     particles->scaleOverLifetime = &curve;
     particles->spreadAngle = 45.0f;
     particles->initialColor = RED;
-    particles->emissionRate = 100;
+    particles->emissionRate = 500;
     particles->lifetime = 2.0f;
 
     R3D_UpdateParticleEmitterCPUAABB(particles);
@@ -63,8 +78,9 @@ int main(void)
     }
 
     R3D_UnloadParticleEmitterCPU(particles);
-
     R3D_Close();
+
+    UnloadMesh(sphere);
     CloseWindow();
 
     return 0;

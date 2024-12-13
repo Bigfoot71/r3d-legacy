@@ -199,6 +199,19 @@ typedef enum {
 } R3D_CastShadow;
 
 /**
+ * @brief Enumeration of billboard modes for 3D objects.
+ * 
+ * This enumeration defines how a 3D object (billboard) aligns itself relative to the camera.
+ * It provides options to disable billboarding or to enable specific modes of alignment.
+ */
+typedef enum {
+    R3D_BILLBOARD_DISABLED,     /**< Billboarding is disabled; the object retains its original orientation. */
+    R3D_BILLBOARD_ENABLED,      /**< Full billboarding; the object fully faces the camera, rotating on all axes. */
+    R3D_BILLBOARD_Y_AXIS        /**< Y-axis constrained billboarding; the object rotates only around the Y-axis,
+                                     keeping its "up" orientation fixed. This is suitable for upright objects like characters or signs. */
+} R3D_BillboardMode;
+
+/**
  * @enum R3D_LightType
  * @brief Defines the types of lights available in the rendering engine.
  * 
@@ -376,6 +389,7 @@ typedef struct {
     R3D_Transform transform;         /**< Transform defining the position, rotation, and scale of the model. */
     BoundingBox aabb;                /**< Axis-aligned bounding box (AABB) for the model. Used for culling and spatial queries. */
     R3D_CastShadow shadow;           /**< Shadow casting behavior of the model (see `R3D_CastShadow`). */
+    R3D_BillboardMode billboard;     /**< Indicates whether the model should be rendered as a billboard. */
     void *internal;                  /**< Internal data used by the rendering engine. Should not be modified directly. */
 } R3D_Model;
 
@@ -447,6 +461,8 @@ typedef struct {
     BoundingBox aabb;               /**< The bounding box of the particle system. Default: ((-10, -10, -10), (10, 10, 10)). */
 
     R3D_CastShadow shadow;           /**< The shadow casting mode for the particle system. Default: R3D_CAST_OFF. */
+    R3D_BillboardMode billboard;     /**< Indicates whether particles should be rendered as billboards. Default: R3D_BILLBOARD_ENABLED */
+
     bool autoEmission;               /**< Indicates whether particle emission is automatic when calling `R3D_UpdateEmitterParticleCPU`.
                                       *   If false, emission is manual using `R3D_EmitParticleCPU`. Default: true.
                                       */

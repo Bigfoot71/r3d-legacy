@@ -75,6 +75,8 @@ R3D_ParticleSystemCPU* R3D_LoadParticleEmitterCPU(const Mesh* mesh, const R3D_Ma
     system->angularVelocityOverLifetime = nullptr;
 
     system->shadow = R3D_CAST_OFF;
+    system->billboard = R3D_BILLBOARD_ENABLED;
+
     system->autoEmission = true;
 
     return system;

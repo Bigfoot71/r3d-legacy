@@ -81,6 +81,7 @@ R3D_Model R3D_LoadModel(const char* fileName)
         .transform = R3D_CreateTransformIdentity(nullptr),
         .aabb = {},
         .shadow = R3D_CAST_ON,
+        .billboard = R3D_BILLBOARD_DISABLED,
         .internal = r3dModel,
     };
 
@@ -102,6 +103,7 @@ R3D_Model R3D_LoadModelFromMesh(Mesh mesh)
         .transform = R3D_CreateTransformIdentity(nullptr),
         .aabb = {},
         .shadow = R3D_CAST_ON,
+        .billboard = R3D_BILLBOARD_DISABLED,
         .internal = r3dModel,
     };
 
