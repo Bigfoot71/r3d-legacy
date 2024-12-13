@@ -173,9 +173,13 @@ void R3D_UpdateParticleEmitterCPU(R3D_ParticleSystemCPU* system, float deltaTime
 
     emitter.emissionTimer -= deltaTime;
 
-    if (emitter.emissionTimer <= 0.0f) {
-        if (R3D_EmitParticleCPU(system) && system->emissionRate != 0.0f) {
-            emitter.emissionTimer = 1.0f / system->emissionRate;
+    if (system->emissionRate > 0.0f) {
+        while (emitter.emissionTimer <= 0.0f) {
+            R3D_EmitParticleCPU(system);
+            emitter.emissionTimer += 1.0f / system->emissionRate;
+            if (system->emissionRate <= 0.0f) {
+                break;
+            }
         }
     }
 
