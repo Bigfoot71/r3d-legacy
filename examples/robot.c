@@ -60,8 +60,8 @@ int main(void)
         BeginDrawing();
             ClearBackground(BLACK);
             R3D_Begin(camera);
-                R3D_Draw(&ground);
-                R3D_Draw(&robot);
+                R3D_DrawModel(&ground);
+                R3D_DrawModel(&robot);
             R3D_End();
             DrawFPS(10, 10);
         EndDrawing();

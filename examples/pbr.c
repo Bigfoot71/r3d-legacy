@@ -82,7 +82,7 @@ int main(void)
             ClearBackground(DARKGRAY);
 
             R3D_Begin(camera);
-                R3D_DrawEx(&sphere, Vector3Zero(), modelScale);
+                R3D_DrawModelEx(&sphere, Vector3Zero(), modelScale);
             R3D_End();
 
         EndDrawing();

@@ -64,8 +64,8 @@ int main(void)
         BeginDrawing();
             ClearBackground(BLACK);
             R3D_Begin(camera);
-                R3D_Draw(&ground);
-                R3D_Draw(&bat);
+                R3D_DrawModel(&ground);
+                R3D_DrawModel(&bat);
             R3D_End();
             DrawText("Model by Builder123YT - (link in code)", 10, 10, 20, WHITE);
         EndDrawing();

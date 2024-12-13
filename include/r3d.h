@@ -360,6 +360,59 @@ typedef struct {
     void *internal;                  /**< Internal data used by the rendering engine. Should not be modified directly. */
 } R3D_Model;
 
+typedef struct {
+    float time;   // Normalized time (0.0 to 1.0)
+    float value;  // Value at this keyframe
+} R3D_Keyframe;
+
+typedef struct {
+    R3D_Keyframe *keyframes;    // Dynamic array of keyframes
+    unsigned int capacity;      // Allocated size of the array
+    unsigned int size;          // Current number of keyframes
+} R3D_InterpolationCurve;
+
+typedef struct {
+
+    void *internal;
+
+    R3D_Surface surface;        ///< Mesh mesh, R3D_Material material
+
+    Vector3 position;
+    Vector3 gravity;
+
+    Vector3 initialScale;
+    float scaleVariance;
+
+    Vector3 initialRotation;
+    Vector3 rotationVariance;
+
+    Color initialColor;
+    Color colorVariance;
+
+    Vector3 initialVelocity;
+    Vector3 velocityVariance;
+
+    Vector3 initialAngularVelocity;
+    Vector3 angularVelocityVariance;
+
+    float lifetime;
+    float lifetimeVariance;
+
+    float emissionRate;                 ///< Nombre de particule par secondes
+    float spreadAngle;
+
+    R3D_InterpolationCurve *scaleOverLifetime;              ///< Curve controlling scale evolution (e.g., easing functions)
+    R3D_InterpolationCurve *speedOverLifetime;              ///< Curve controlling speed evolution
+    R3D_InterpolationCurve *opacityOverLifetime;            ///< Curve controlling opacity evolution
+    R3D_InterpolationCurve *angularVelocityOverLifetime;    ///< Curve controlling angular velocity evolution
+
+    BoundingBox aabb;
+
+    R3D_CastShadow shadow;
+    bool autoEmission;
+
+} R3D_ParticleSystemCPU;
+
 typedef unsigned int R3D_Light;
 
 #ifdef __cplusplus
@@ -440,7 +493,7 @@ void R3D_SetBlitMode(bool blitAspectKeep, bool blitLinear);
  * This function allows you to enable or disable frustum culling, a technique used to exclude objects
  * that are outside of the camera's viewing frustum from the rendering process. This can improve performance
  * by reducing the number of objects that need to be drawn. It is particularly useful if you are already
- * performing your own culling tests before calling `R3D_Draw()`.
+ * performing your own culling tests before calling `R3D_DrawModel()`.
  * 
  * @param enabled If `true`, frustum culling will be enabled. If `false`, frustum culling will be disabled.
  * 
@@ -476,7 +529,7 @@ void R3D_SetRenderTarget(const RenderTexture* target);
  *       However, you can use `R3D_SetRenderTarget` to specify an alternative render target (other than the main framebuffer) 
  *       for R3D's rendering operations. This allows you to perform off-screen rendering before finalizing the frame.
  *       This restriction exists because R3D manages its own internal render targets for post-processing 
- *       and shadow mapping. All drawing operations should be performed using `R3D_Draw` and finalized 
+ *       and shadow mapping. All drawing operations should be performed using `R3D_DrawModel` and finalized 
  *       with `R3D_End`.
  * 
  * @note This approach simplifies the API but is currently incompatible with the `rshapes.c` module of raylib.
@@ -493,7 +546,7 @@ void R3D_Begin(Camera3D camera);
  * 
  * @note Ensure the model's `R3D_Transform` is correctly configured before calling this function.
  */
-void R3D_Draw(const R3D_Model* model);
+void R3D_DrawModel(const R3D_Model* model);
 
 /**
  * @brief Draws a 3D model with a specified position and uniform scaling.
@@ -505,7 +558,7 @@ void R3D_Draw(const R3D_Model* model);
  * @param position The position where the model should be rendered.
  * @param scale    A uniform scale factor to apply to the model.
  */
-void R3D_DrawEx(const R3D_Model* model, Vector3 position, float scale);
+void R3D_DrawModelEx(const R3D_Model* model, Vector3 position, float scale);
 
 /**
  * @brief Draws a 3D model with advanced transformation settings.
@@ -519,7 +572,9 @@ void R3D_DrawEx(const R3D_Model* model, Vector3 position, float scale);
  * @param rotationAngle The angle of rotation (in degrees) around the specified axis.
  * @param scale        A scaling factor to apply to the model in each axis.
  */
-void R3D_DrawPro(const R3D_Model* model, Vector3 position, Vector3 rotationAxis, float rotationAngle, Vector3 scale);
+void R3D_DrawModelPro(const R3D_Model* model, Vector3 position, Vector3 rotationAxis, float rotationAngle, Vector3 scale);
+
+void R3D_DrawParticleSystemCPU(R3D_ParticleSystemCPU* system);
 
 /**
  * @brief Finalizes the current rendering frame.
@@ -528,7 +583,7 @@ void R3D_DrawPro(const R3D_Model* model, Vector3 position, Vector3 rotationAxis,
  * It iterates over all surfaces, rendering them first to the shadow maps, then to the scene render target,
  * and finally applies all post-processing effects and blits the result to the defined render target or the main framebuffer.
  * 
- * @note This function must be called after all `R3D_Draw` operations for a frame are completed.
+ * @note This function must be called after all `R3D_DrawXXX` operations for a frame are completed.
  */
 void R3D_End(void);
 
@@ -1730,6 +1785,121 @@ void R3D_UpdateModelAABB(R3D_Model* model, float extraMargin);
  */
 void R3D_GenTangents(R3D_Model* model);
 
+
+/* [Objects] - Interpolation Curve Functions */
+
+/**
+ * @brief Loads an interpolation curve with a specified initial capacity.
+ * 
+ * This function initializes an interpolation curve with the given capacity. The capacity represents the initial size of 
+ * the memory allocated for the curve. You can add keyframes to the curve using `R3D_AddKeyframe`. If adding a keyframe 
+ * exceeds the initial capacity, the system will automatically reallocate memory and double the initial capacity.
+ * 
+ * @param capacity The initial capacity (size) of the interpolation curve. This is the number of keyframes that can be added 
+ *                 before a reallocation occurs.
+ * @return An initialized interpolation curve with the specified capacity.
+ */
+R3D_InterpolationCurve R3D_LoadInterpolationCurve(int capacity);
+
+/**
+ * @brief Unloads the interpolation curve and frees the allocated memory.
+ * 
+ * This function deallocates the memory associated with the interpolation curve and clears any keyframes stored in it. 
+ * It should be called when the curve is no longer needed to avoid memory leaks.
+ * 
+ * @param curve A pointer to the interpolation curve to be unloaded.
+ */
+void R3D_UnloadInterpolationCurve(R3D_InterpolationCurve* curve);
+
+/**
+ * @brief Adds a keyframe to the interpolation curve.
+ * 
+ * This function adds a keyframe to the given interpolation curve at a specific time and value. If the addition of the 
+ * keyframe requires reallocating memory and the reallocation fails, the previously allocated memory and keyframes are 
+ * preserved, but the new keyframe is not added.
+ * 
+ * @param curve A pointer to the interpolation curve to which the keyframe will be added.
+ * @param time The time at which the keyframe will be added.
+ * @param value The value associated with the keyframe.
+ * @return `true` if the keyframe was successfully added, or `false` if the reallocation failed.
+ */
+bool R3D_AddKeyframe(R3D_InterpolationCurve* curve, float time, float value);
+
+/**
+ * @brief Evaluates the interpolation curve at a specific time.
+ * 
+ * This function evaluates the value of the interpolation curve at a given time. The curve will interpolate between 
+ * keyframes based on the time provided.
+ * 
+ * @param curve A pointer to the interpolation curve to be evaluated.
+ * @param time The time at which to evaluate the curve.
+ * @return The value of the curve at the specified time.
+ */
+float R3D_EvaluateCurve(R3D_InterpolationCurve* curve, float time);
+
+
+/* [Objects] - Particle System CPU Functions */
+
+/**
+ * @brief Loads a particle emitter system for the CPU.
+ * 
+ * This function initializes a particle emitter system on the CPU, using a mesh, a material, and a specified maximum 
+ * number of particles. It prepares the necessary data structures and allocates memory for the system.
+ * 
+ * @param mesh A pointer to the mesh associated with the particle emitter. This mesh may be used for rendering or 
+ *             for generating particle data.
+ * @param material A pointer to the material used by the particle system for rendering.
+ * @param maxParticles The maximum number of particles the system can handle at once.
+ * @return A pointer to the newly initialized `R3D_ParticleSystemCPU` structure.
+ */
+R3D_ParticleSystemCPU* R3D_LoadParticleEmitterCPU(const Mesh* mesh, const R3D_Material* material, int maxParticles);
+
+/**
+ * @brief Unloads the particle emitter system and frees allocated memory.
+ * 
+ * This function deallocates the memory used by the particle emitter system and clears the associated resources. 
+ * It should be called when the particle system is no longer needed to prevent memory leaks.
+ * 
+ * @param system A pointer to the `R3D_ParticleSystemCPU` to be unloaded.
+ */
+void R3D_UnloadParticleEmitterCPU(R3D_ParticleSystemCPU* system);
+
+/**
+ * @brief Emits a particle in the particle system.
+ * 
+ * This function triggers the emission of a new particle in the particle system. It handles the logic of adding a new 
+ * particle to the system and initializing its properties based on the current state of the system.
+ * 
+ * @param system A pointer to the `R3D_ParticleSystemCPU` where the particle will be emitted.
+ * @return `true` if the particle was successfully emitted, `false` if the system is at full capacity and cannot emit more particles.
+ */
+bool R3D_EmitParticleCPU(R3D_ParticleSystemCPU* system);
+
+/**
+ * @brief Updates the particle emitter system by advancing particle positions.
+ * 
+ * This function updates the positions and properties of particles in the system based on the elapsed time. It handles 
+ * simulation of particle movement, gravity, and other physics-based calculations.
+ * 
+ * @param system A pointer to the `R3D_ParticleSystemCPU` to be updated.
+ * @param deltaTime The time elapsed since the last update (in seconds).
+ */
+void R3D_UpdateParticleEmitterCPU(R3D_ParticleSystemCPU* system, float deltaTime);
+
+/**
+ * @brief Updates the AABB (Axis-Aligned Bounding Box) of the particle emitter system.
+ * 
+ * This function performs a simulation of the particle system to estimate the AABB of the particles. It calculates the 
+ * possible positions of each particle at both half of their lifetime and at the end of their lifetime. The AABB is used 
+ * to approximate the region of space the particle system occupies, which helps in determining if the system should be 
+ * rendered or not based on camera frustum culling.
+ * 
+ * @param system A pointer to the `R3D_ParticleSystemCPU` whose AABB is to be updated.
+ * 
+ * @note This function performs a frustum culling test if the `R3D_FLAG_NO_FRUSTUM_CULLING` flag is not active. 
+ *       If this flag is active, the frustum culling is skipped, and the AABB is computed without considering the camera's frustum.
+ */
+void R3D_UpdateParticleEmitterCPUAABB(R3D_ParticleSystemCPU* system);
 
 
 /* [Objects] - Transform Functions */

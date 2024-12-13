@@ -36,7 +36,7 @@ int main(void)
             R3D_Begin(camera);
                 for (int x = -3; x <= 3; x++) {
                     R3D_SetMapAlbedo(&sphere, 0, NULL, ColorFromHSV((x + 3) / 6.0f * 360, 1.0f, 1.0f));
-                    R3D_DrawEx(&sphere, (Vector3) { x * 2.0f, 0, 0 }, 1.0f);
+                    R3D_DrawModelEx(&sphere, (Vector3) { x * 2.0f, 0, 0 }, 1.0f);
                 }
             R3D_End();
             DrawFPS(10, 10);

@@ -55,7 +55,7 @@ int main(void)
                         R3D_SetMapMetalness(&sphere, 0, NULL, (5.0f+x)/10.0f);
                         R3D_SetMapRoughness(&sphere, 0, NULL, (5.0f+y)/10.0f);
                         R3D_SetMapAlbedo(&sphere, 0, NULL, ColorFromHSV((5.0f+x)*18, 1, 1));
-                        R3D_DrawEx(&sphere, (Vector3) { (float)x, (float)y, 0 }, 1.0f);
+                        R3D_DrawModelEx(&sphere, (Vector3) { (float)x, (float)y, 0 }, 1.0f);
                     }
                 }
 

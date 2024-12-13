@@ -53,12 +53,12 @@ int main(void)
 
             R3D_Begin(camera);
 
-                R3D_Draw(&ground);
+                R3D_DrawModel(&ground);
 
                 for (int z = -1; z <= 2; z++) {
                     for (int y = -1; y <= 2; y++) {
                         for (int x = -1; x <= 2; x++) {
-                            R3D_DrawEx(&cube, (Vector3) {
+                            R3D_DrawModelEx(&cube, (Vector3) {
                                 x * 10.0f - 5.0f,
                                 y * 10.0f - 5.0f,
                                 z * 10.0f - 5.0f

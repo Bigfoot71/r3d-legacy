@@ -80,19 +80,24 @@ void R3D_Begin(Camera3D camera)
     gRenderer->setCamera(camera);
 }
 
-void R3D_Draw(const R3D_Model* model)
+void R3D_DrawModel(const R3D_Model* model)
 {
-    gRenderer->draw(*model, {}, {}, 0.0f, { 1.0f, 1.0f, 1.0f });
+    gRenderer->drawModel(*model, {}, {}, 0.0f, { 1.0f, 1.0f, 1.0f });
 }
 
-void R3D_DrawEx(const R3D_Model* model, Vector3 position, float scale)
+void R3D_DrawModelEx(const R3D_Model* model, Vector3 position, float scale)
 {
-    gRenderer->draw(*model, position, {}, 0.0f, { scale, scale, scale });
+    gRenderer->drawModel(*model, position, {}, 0.0f, { scale, scale, scale });
 }
 
-void R3D_DrawPro(const R3D_Model* model, Vector3 position, Vector3 rotationAxis, float rotationAngle, Vector3 scale)
+void R3D_DrawModelPro(const R3D_Model* model, Vector3 position, Vector3 rotationAxis, float rotationAngle, Vector3 scale)
 {
-    gRenderer->draw(*model, position, rotationAxis, rotationAngle, scale);
+    gRenderer->drawModel(*model, position, rotationAxis, rotationAngle, scale);
+}
+
+void R3D_DrawParticleSystemCPU(R3D_ParticleSystemCPU* system)
+{
+    gRenderer->drawParticleSystemCPU(*system);
 }
 
 void R3D_End()

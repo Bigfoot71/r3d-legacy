@@ -98,7 +98,7 @@ int main() {
     while (!WindowShouldClose()) {
         BeginDrawing();
             R3D_Begin(camera);
-                R3D_Draw(&model);
+                R3D_DrawModel(&model);
             R3D_End();
         EndDrawing();
     }
@@ -126,7 +126,7 @@ To draw a model in the scene, use the `draw()` method. It accepts various transf
 
 ```c
 R3D_Model model = R3D_LoadModel("model.obj");
-R3D_DrawPro(&model, (Vector3){0, 0, 0}, (Vector3){0, 1, 0}, 45.0f, (Vector3){1, 1, 1});
+R3D_DrawModelPro(&model, (Vector3){0, 0, 0}, (Vector3){0, 1, 0}, 45.0f, (Vector3){1, 1, 1});
 ```
 
 ---

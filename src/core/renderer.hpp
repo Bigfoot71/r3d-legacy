@@ -33,13 +33,14 @@
 #include "../detail/GL/GLShader.hpp"
 #include "../detail/GL/GLQuad.hpp"
 
-#include "../detail/Frustum.hpp"
-#include "../detail/IDMan.hpp"
-
+#include "../detail/ShaderMaterial.hpp"
 #include "../detail/RenderTarget.hpp"
 #include "../detail/BatchMap.hpp"
+#include "../detail/Frustum.hpp"
+#include "../detail/IDMan.hpp"
 #include "../detail/GL.hpp"
 
+#include "../objects/particle_system_cpu.hpp"
 #include "../objects/skybox.hpp"
 #include "../objects/model.hpp"
 #include "./lighting.hpp"
@@ -50,6 +51,7 @@
 
 #include <unordered_map>
 #include <cstdint>
+#include <variant>
 #include <vector>
 #include <cstdio>
 #include <cfloat>
@@ -66,37 +68,142 @@ extern std::unique_ptr<r3d::Renderer> gRenderer;
 namespace r3d {
 
 /**
- * @brief Maximum number of lights per surface, matching the value defined in the 'material' shader.
- * @note If you modify this value, ensure to update it in 'material.vs' and 'material.fs' shaders as well.
- */
-static constexpr int SHADER_LIGHT_COUNT = 8;
-
-/**
  * @brief Stores a draw call for rendering in shadow maps.
+ * 
+ * This class encapsulates a draw call, which can either be a mesh or particle system, for rendering in shadow maps.
  */
-struct DrawCallShadow
+class DrawCall_Shadow
 {
-    const R3D_Surface *surface; ///< Pointer to the surface to be rendered.
-    const Matrix transform;     ///< Transformation matrix for the draw call.
+public:
+    /**
+     * @struct Surface
+     * @brief Structure representing a surface to be rendered.
+     * 
+     * This structure contains the mesh and its associated transformation matrix for rendering.
+     */
+    struct Surface {
+        const Mesh *mesh;           ///< Pointer to the surface mesh to be rendered.
+        const Matrix transform;     ///< Transformation matrix for the draw call.
+    };
+
+    /**
+     * @struct ParticlesCPU
+     * @brief Structure representing a particle system to be rendered.
+     * 
+     * This structure contains a pointer to the particle system to be rendered.
+     */
+    struct ParticlesCPU {
+        const R3D_ParticleSystemCPU *system; ///< Pointer to the particle system.
+    };
+
+public:
+    /**
+     * @brief Constructs a draw call for a mesh.
+     * @param mesh The mesh to be rendered.
+     * @param transform The transformation matrix for the mesh.
+     */
+    DrawCall_Shadow(const Mesh* mesh, const Matrix& transform);
+
+    /**
+     * @brief Constructs a draw call for a particle system.
+     * @param system The particle system to be rendered.
+     */
+    DrawCall_Shadow(const R3D_ParticleSystemCPU* system);
+
+    /**
+     * @brief Draws the object (either mesh or particle system) for shadow mapping.
+     * @param light The light source used for shadow mapping.
+     */
+    void draw(const Light& light) const;
+
+private:
+    /**
+     * @brief Draws the mesh for shadow mapping.
+     * @param light The light source used for shadow mapping.
+     */
+    void drawMesh(const Light& light) const;
+
+    /**
+     * @brief Draws the particle system for shadow mapping.
+     * @param light The light source used for shadow mapping.
+     */
+    void drawParticlesCPU(const Light& light) const;
+
+private:
+    std::variant<Surface, ParticlesCPU> mCall; ///< The variant type that holds either a surface or a particle system for rendering.
 };
 
 /**
  * @brief Stores a draw call for rendering in the main scene.
+ * 
+ * This class encapsulates a draw call, which can either be a mesh or particle system, for rendering in the main scene with light and material properties.
  */
-struct DrawCallScene
+class DrawCall_Scene
 {
+public:
     /**
-     * @brief Alias for an array of light pointers used in the shader.
+     * @struct Surface
+     * @brief Structure representing a surface to be rendered in the scene.
+     * 
+     * This structure contains the mesh, material, transformation matrix, and light influences for rendering.
      */
-    using LightsArray = std::array<const Light*, SHADER_LIGHT_COUNT>;
+    struct Surface {
+        struct {
+            const Mesh *mesh;           ///< Pointer to the mesh to be rendered.
+            R3D_Material material;      ///< Material copy for rendering the same mesh with different parameters.
+        } surface;                      ///< Surface information for the draw call.
+        const Matrix transform;         ///< Transformation matrix for the draw call.
+        ShaderLightArray lights;        ///< Array of light pointers influencing this draw call.
+    };
 
-    struct {
-        const Mesh *mesh;           ///< Pointer to the mesh to be rendered.
-        R3D_Material material;      ///< Material copy for rendering the same mesh with different parameters.
-    } surface;                      ///< Surface information for the draw call.
+    /**
+     * @struct ParticlesCPU
+     * @brief Structure representing a particle system to be rendered in the scene.
+     * 
+     * This structure contains the particle system and light influences for rendering.
+     */
+    struct ParticlesCPU {
+        R3D_ParticleSystemCPU *system;   ///< Pointer to the particle system to be rendered.
+        ShaderLightArray lights;         ///< Array of light pointers influencing the particle system.
+    };
 
-    const Matrix transform;         ///< Transformation matrix for the draw call.
-    LightsArray lights;             ///< Array of light pointers influencing this draw call.
+public:
+    /**
+     * @brief Constructs a draw call for a surface to be rendered in the scene.
+     * @param surface The surface to be rendered.
+     * @param transform The transformation matrix for the surface.
+     * @param lights The array of lights influencing this draw call.
+     */
+    DrawCall_Scene(const R3D_Surface& surface, const Matrix& transform, const ShaderLightArray& lights);
+
+    /**
+     * @brief Constructs a draw call for a particle system to be rendered in the scene.
+     * @param system The particle system to be rendered.
+     * @param lights The array of lights influencing the particle system.
+     */
+    DrawCall_Scene(R3D_ParticleSystemCPU* system, const ShaderLightArray& lights);
+
+    /**
+     * @brief Executes the draw call using the provided shader material.
+     * @param shader The shader material to use for rendering.
+     */
+    void draw(ShaderMaterial& shader) const;
+
+private:
+    /**
+     * @brief Draws the mesh for this draw call using the shader material.
+     * @param shader The shader material to use for rendering the mesh.
+     */
+    void drawMesh(ShaderMaterial& shader) const;
+
+    /**
+     * @brief Draws the particle system for this draw call using the shader material.
+     * @param shader The shader material to use for rendering the particle system.
+     */
+    void drawParticlesCPU(ShaderMaterial& shader) const;
+
+private:
+    std::variant<Surface, ParticlesCPU> mCall; ///< The variant type that holds either a surface or a particle system for rendering in the scene.
 };
 
 /**
@@ -143,6 +250,9 @@ namespace r3d {
  */
 class Renderer
 {
+    friend class DrawCall_Shadow;
+    friend class DrawCall_Scene;
+
 public:
     R3D_Environment environment;                ///< Environment settings for the renderer.
     const RenderTexture *customRenderTarget;    ///< Custom raylib render target to which the blit is performed instead of the main framebuffer.
@@ -208,7 +318,18 @@ public:
      * @param rotationAngle The angle of rotation, in degrees.
      * @param scale The scale of the model.
      */
-    void draw(const R3D_Model& model, const Vector3& position, const Vector3& rotationAxis, float rotationAngle, const Vector3& scale);
+    void drawModel(const R3D_Model& model, const Vector3& position, const Vector3& rotationAxis, float rotationAngle, const Vector3& scale);
+
+    /**
+     * @brief Renders the given particle system in the scene.
+     * 
+     * This method evaluates and renders the specified particle system in the scene. It processes the system's visibility, 
+     * handles the required transformations, and queues the appropriate draw calls for rendering. This function is typically 
+     * called to render particle systems after their properties (such as position, velocity, and material) have been updated.
+     * 
+     * @param system The particle system to be rendered.
+     */
+    void drawParticleSystemCPU(R3D_ParticleSystemCPU& system);
 
     /**
      * @brief Executes the rendering of all queued surfaces and presents the final frame to the display.
@@ -312,42 +433,28 @@ private:
     /**
      * @brief Draws a surface in the shadow map render pass.
      * 
-     * @param drawCall The draw call information.
-     * @param light The light casting shadows.
+     * This function is used to render a mesh for the shadow map during the shadow mapping pass. It takes the light source 
+     * casting shadows, the mesh to be rendered, and its transformation matrix as inputs to compute the correct shadow rendering.
+     * 
+     * @param light The light casting shadows on the scene. This determines the direction and type of shadow.
+     * @param mesh The mesh to be rendered for shadow mapping. It contains the geometry of the object.
+     * @param transform The transformation matrix applied to the mesh, including its position, rotation, and scale in the world.
      */
-    void drawSurfaceShadow(const DrawCallShadow& drawCall, const Light& light) const;
+    void drawMeshShadow(const Light& light, const Mesh& mesh, const Matrix& transform) const;
 
     /**
      * @brief Draws a surface in the main scene render pass.
      * 
-     * @param drawCall The draw call information.
-     * @param shader The shader to use for rendering.
-     */
-    void drawSurfaceScene(const DrawCallScene& drawCall, const GLShader& shader, const Quaternion& quatSkybox) const;
-
-    /**
-     * @brief Renders the shadow map for a directional light.
+     * This function is used to render a mesh in the main scene, with materials and shaders applied. It takes the mesh, its 
+     * transformation matrix, the shader material to use for rendering, and the material configuration to properly render the 
+     * object within the scene.
      * 
-     * @param light The directional light casting shadows.
-     * @param batch The batch of shadow draw calls.
+     * @param mesh The mesh to be rendered in the scene. It contains the object's geometry data.
+     * @param transform The transformation matrix applied to the mesh, which controls its position, rotation, and scale.
+     * @param shader The shader material used for rendering the surface. It controls the appearance of the mesh.
+     * @param config The material configuration settings that specify how the mesh should be rendered (e.g., material properties).
      */
-    void renderShadowMapDirectional(const Light& light, const std::vector<DrawCallShadow>& batch) const;
-
-    /**
-     * @brief Renders the shadow map for a spotlight.
-     * 
-     * @param light The spotlight casting shadows.
-     * @param batch The batch of shadow draw calls.
-     */
-    void renderShadowMapSpot(const Light& light, const std::vector<DrawCallShadow>& batch) const;
-
-    /**
-     * @brief Renders the shadow map for an omnidirectional light.
-     * 
-     * @param light The omnidirectional light casting shadows.
-     * @param batch The batch of shadow draw calls.
-     */
-    void renderShadowMapOmni(const Light& light, const std::vector<DrawCallShadow>& batch) const;
+    void drawMeshScene(const Mesh& mesh, const Matrix& transform, ShaderMaterial& shader, R3D_MaterialConfig config) const;
 
 private:
     int mInternalWidth;                         ///< Internal framebuffer width.
@@ -357,12 +464,12 @@ private:
     std::array<RenderTarget, 2> mTargetBlur;    ///< Render targets for blurring effects.
 
     std::unordered_map<
-        R3D_MaterialShaderConfig, GLShader,
+        R3D_MaterialShaderConfig, ShaderMaterial,
         MaterialShaderConfigHash, MaterialShaderConfigEqual
     > mShaderMaterials; ///< Shader map for material properties.
 
-    BatchMap<R3D_MaterialConfig, DrawCallScene> mSceneBatches;  ///< Scene draw calls sorted by material.
-    BatchMap<R3D_Light, DrawCallShadow> mShadowBatches;         ///< Shadow draw calls for each light.
+    BatchMap<R3D_MaterialConfig, DrawCall_Scene> mSceneBatches;      ///< Scene draw calls sorted by material.
+    BatchMap<R3D_Light, DrawCall_Shadow> mShadowBatches;             ///< Shadow draw calls for each light.
 
     std::map<R3D_Light, Light> mLights;         ///< Map of lights and their data.
     R3D_MaterialConfig mDefaultMaterialConfig;  ///< Default material configuration.
@@ -504,7 +611,7 @@ inline void Renderer::loadMaterialConfig(R3D_MaterialConfig config)
         mSceneBatches.addBatch(config);
     }
 
-    // Check if the shader has already been created for these properties
+    // Compiles a shader for the given configuration if necessary
 
     const auto it_material_shader = mShaderMaterials.find(config.shader);
 
@@ -512,94 +619,7 @@ inline void Renderer::loadMaterialConfig(R3D_MaterialConfig config)
         return;
     }
 
-    // Constructs the shader code for the given properties
-
-    std::string vsCode("#version 330 core\n");
-    {
-        if (config.shader.flags & R3D_MATERIAL_FLAG_VERTEX_COLOR) {
-            vsCode += "#define VERTEX_COLOR\n";
-        }
-        if (config.shader.diffuse == R3D_DIFFUSE_UNSHADED) {
-            vsCode += "#define DIFFUSE_UNSHADED\n";
-        } else {
-            if (config.shader.flags & R3D_MATERIAL_FLAG_RECEIVE_SHADOW) {
-                vsCode += "#define RECEIVE_SHADOW\n";
-            }
-            if (config.shader.flags & R3D_MATERIAL_FLAG_MAP_NORMAL) {
-                vsCode += "#define MAP_NORMAL\n";
-            }
-        }
-
-        vsCode += VS_CODE_MATERIAL;
-    }
-
-    std::string fsCode("#version 330 core\n");
-    {
-        switch (config.shader.diffuse) {
-            case R3D_DIFFUSE_UNSHADED:
-                fsCode += "#define DIFFUSE_UNSHADED\n";
-                break;
-            case R3D_DIFFUSE_BURLEY:
-                fsCode += "#define DIFFUSE_BURLEY\n";
-                break;
-            case R3D_DIFFUSE_DISNEY:
-                fsCode += "#define DIFFUSE_DISNEY\n";
-                break;
-            case R3D_DIFFUSE_LAMBERT:
-                fsCode += "#define DIFFUSE_LAMBERT\n";
-                break;
-            case R3D_DIFFUSE_PHONG:
-                fsCode += "#define DIFFUSE_PHONG\n";
-                break;
-            case R3D_DIFFUSE_TOON:
-                fsCode += "#define DIFFUSE_TOON\n";
-                break;
-        }
-
-        if (config.shader.flags & R3D_MATERIAL_FLAG_VERTEX_COLOR) {
-            fsCode += "#define VERTEX_COLOR\n";
-        }
-
-        if (config.shader.diffuse != R3D_DIFFUSE_UNSHADED) {
-            switch (config.shader.specular) {
-                case R3D_SPECULAR_SCHLICK_GGX:
-                    fsCode += "#define SPECULAR_SCHLICK_GGX\n";
-                    break;
-                case R3D_SPECULAR_DISNEY:
-                    fsCode += "#define SPECULAR_DISNEY\n";
-                    break;
-                case R3D_SPECULAR_BLINN_PHONG:
-                    fsCode += "#define SPECULAR_BLINN_PHONG\n";
-                    break;
-                case R3D_SPECULAR_TOON:
-                    fsCode += "#define SPECULAR_TOON\n";
-                    break;
-                default:
-                    break;
-            }
-            if (config.shader.flags & R3D_MATERIAL_FLAG_RECEIVE_SHADOW) {
-                fsCode += "#define RECEIVE_SHADOW\n";
-            }
-            if (config.shader.flags & R3D_MATERIAL_FLAG_MAP_EMISSION) {
-                fsCode += "#define MAP_EMISSION\n";
-            }
-            if (config.shader.flags & R3D_MATERIAL_FLAG_MAP_NORMAL) {
-                fsCode += "#define MAP_NORMAL\n";
-            }
-            if (config.shader.flags & R3D_MATERIAL_FLAG_MAP_AO) {
-                fsCode += "#define MAP_AO\n";
-            }
-            if (config.shader.flags & R3D_MATERIAL_FLAG_SKY_IBL) {
-                fsCode += "#define SKY_IBL\n";
-            }
-        }
-
-        fsCode += FS_CODE_MATERIAL;
-    }
-
-    mShaderMaterials.emplace(config.shader,
-        GLShader(vsCode, fsCode)
-    );
+    mShaderMaterials.emplace(config.shader, config.shader);
 }
 
 inline void Renderer::unloadMaterialConfig(R3D_MaterialConfig config)
@@ -643,7 +663,7 @@ inline void Renderer::setCamera(const Camera3D& camera)
     }
 }
 
-inline void Renderer::draw(const R3D_Model& model, const Vector3& position, const Vector3& rotationAxis, float rotationAngle, const Vector3& scale)
+inline void Renderer::drawModel(const R3D_Model& model, const Vector3& position, const Vector3& rotationAxis, float rotationAngle, const Vector3& scale)
 {
     const std::vector<R3D_Surface>& surfaces = static_cast<Model*>(model.internal)->surfaces;
 
@@ -651,7 +671,7 @@ inline void Renderer::draw(const R3D_Model& model, const Vector3& position, cons
     // the transformation assigned to the model, any parent transformations if present,
     // the transformation specified via rlgl, and also retrieves the model's actual global position.
 
-    Matrix matModel = MatrixMultiply(
+    Matrix transform = MatrixMultiply(
         MatrixMultiply(
             MatrixScale(scale.x, scale.y, scale.z),
             MatrixRotate(rotationAxis, rotationAngle * DEG2RAD)
@@ -659,16 +679,16 @@ inline void Renderer::draw(const R3D_Model& model, const Vector3& position, cons
         MatrixTranslate(position.x, position.y, position.z)
     );
 
-    matModel = MatrixMultiply(matModel, R3D_TransformToGlobal(&model.transform));
-    matModel = MatrixMultiply(matModel, rlGetMatrixTransform());
+    transform = MatrixMultiply(transform, R3D_TransformToGlobal(&model.transform));
+    transform = MatrixMultiply(transform, rlGetMatrixTransform());
 
     const Vector3 modelPosition = Vector3Add(model.transform.position, position);
 
     // Retrieves the model's bounding box transformed according to the previously obtained transformation matrix.
 
     BoundingBox globalAABB = model.aabb;
-    globalAABB.min = Vector3Transform(globalAABB.min, matModel);
-    globalAABB.max = Vector3Transform(globalAABB.max, matModel);
+    globalAABB.min = Vector3Transform(globalAABB.min, transform);
+    globalAABB.max = Vector3Transform(globalAABB.max, transform);
 
     // Performs a bounding box test for the model against the camera's frustum if necessary
     // to determine if the object should be rendered in the visible scene. This feature can be
@@ -683,7 +703,7 @@ inline void Renderer::draw(const R3D_Model& model, const Vector3& position, cons
     // This part checks which lights should cast shadows onto the model
     // and also associates the lights with the draw call if the model is to be rendered in the scene.
 
-    DrawCallScene::LightsArray lightsWhichShouldIlluminate{};
+    ShaderLightArray lightsWhichShouldIlluminate{};
     int lightsWhichShouldIlluminateCount = 0;
 
     for (const auto& [id, light] : mLights) {
@@ -714,7 +734,7 @@ inline void Renderer::draw(const R3D_Model& model, const Vector3& position, cons
                 if (light.frustum.aabbIn(globalAABB)) {
                     if (model.shadow != R3D_CAST_OFF && light.shadow) {
                         for (const auto& surface : surfaces) {
-                            batch.push_back(DrawCallShadow { &surface, matModel });
+                            batch.push_back(DrawCall_Shadow(&surface.mesh, transform));
                         }
                     }
                     if (drawSurfaceScene && lightsWhichShouldIlluminateCount < SHADER_LIGHT_COUNT) {
@@ -727,7 +747,7 @@ inline void Renderer::draw(const R3D_Model& model, const Vector3& position, cons
                 if (light.frustum.aabbIn(globalAABB)) {
                     if (model.shadow != R3D_CAST_OFF && light.shadow) {
                         for (const auto& surface : surfaces) {
-                            batch.push_back(DrawCallShadow { &surface, matModel });
+                            batch.push_back(DrawCall_Shadow(&surface.mesh, transform));
                         }
                     }
                     if (drawSurfaceScene && lightsWhichShouldIlluminateCount < SHADER_LIGHT_COUNT) {
@@ -741,7 +761,7 @@ inline void Renderer::draw(const R3D_Model& model, const Vector3& position, cons
                 // Therefore, we don't need to perform a frustum test since it illuminates in all directions.
                 if (model.shadow != R3D_CAST_OFF && light.shadow) {
                     for (const auto& surface : surfaces) {
-                        batch.push_back(DrawCallShadow { &surface, matModel });
+                            batch.push_back(DrawCall_Shadow(&surface.mesh, transform));
                     }
                 }
                 if (drawSurfaceScene && lightsWhichShouldIlluminateCount < SHADER_LIGHT_COUNT) {
@@ -754,12 +774,110 @@ inline void Renderer::draw(const R3D_Model& model, const Vector3& position, cons
 
     if (drawSurfaceScene) {
         for (const auto& surface : surfaces) {
-            auto& batch = mSceneBatches.getBatch(surface.material.config);
-            batch.push_back(DrawCallScene {
-                { .mesh = &surface.mesh, .material = surface.material },
-                matModel, lightsWhichShouldIlluminate
-            });
+            mSceneBatches.pushDrawCall(
+                surface.material.config,
+                DrawCall_Scene(surface, transform, lightsWhichShouldIlluminate)
+            );
         }
+    }
+}
+
+inline void Renderer::drawParticleSystemCPU(R3D_ParticleSystemCPU& system)
+{
+    // Computes the system's transformation matrix using the provided parameters,
+    // the transformation assigned to the system, any parent transformations if present,
+    // the transformation specified via rlgl, and also retrieves the system's actual global position.
+
+    Matrix transform = MatrixTranslate(system.position.x, system.position.y, system.position.z);
+    transform = MatrixMultiply(transform, rlGetMatrixTransform());
+
+    // Retrieves the system's bounding box transformed according to the previously obtained transformation matrix.
+
+    BoundingBox globalAABB = system.aabb;
+    globalAABB.min = Vector3Transform(globalAABB.min, transform);
+    globalAABB.max = Vector3Transform(globalAABB.max, transform);
+
+    // Performs a bounding box test for the system against the camera's frustum if necessary
+    // to determine if the object should be rendered in the visible scene. This feature can be
+    // disabled using the initialization flag 'R3D_FLAG_NO_FRUSTUM_CULLING'.
+
+    bool drawSurfaceScene = true;
+    if (!(flags & R3D_FLAG_NO_FRUSTUM_CULLING || system.shadow == R3D_CAST_SHADOW_ONLY)) {
+        drawSurfaceScene = mFrustumCamera.aabbIn(globalAABB);
+    }
+
+    // Determines which lights will interact with the system.
+    // This part checks which lights should cast shadows onto the system
+    // and also associates the lights with the draw call if the system is to be rendered in the scene.
+
+    ShaderLightArray lightsWhichShouldIlluminate{};
+    int lightsWhichShouldIlluminateCount = 0;
+
+    for (const auto& [id, light] : mLights) {
+
+        if (!light.enabled) continue;
+
+        // Here, we use a rather naive approach. If the light is not directional—
+        // for instance, it does not simulate the sun—then we check whether the squared 
+        // distance between the origin of the system and the light exceeds the maximum range 
+        // of the light's effective field. If it does, we can safely omit this light source for the system.
+
+        // Using the squared distance is faster to compute and provides a certain margin, 
+        // making it acceptable in this context.
+
+        const float lightMaxDistSqr = light.maxDistance * light.maxDistance;
+        if (light.type != R3D_DIRLIGHT && Vector3DistanceSqr(system.position, light.position) > lightMaxDistSqr) {
+            continue;
+        }
+
+        // Here we add:
+        //   - 1: The surfaces to the shadow batch for the light
+        //   - 2: The light to the surface draw calls for the scene rendering
+
+        auto& batch = mShadowBatches.getBatch(id);
+
+        switch (light.type) {
+            case R3D_DIRLIGHT: {
+                if (light.frustum.aabbIn(globalAABB)) {
+                    if (system.shadow != R3D_CAST_OFF && light.shadow) {
+                        batch.push_back(DrawCall_Shadow(&system));
+                    }
+                    if (drawSurfaceScene && lightsWhichShouldIlluminateCount < SHADER_LIGHT_COUNT) {
+                        lightsWhichShouldIlluminate[lightsWhichShouldIlluminateCount] = &light;
+                        lightsWhichShouldIlluminateCount++;
+                    }
+                }
+            } break;
+            case R3D_SPOTLIGHT: {
+                if (light.frustum.aabbIn(globalAABB)) {
+                    if (system.shadow != R3D_CAST_OFF && light.shadow) {
+                        batch.push_back(DrawCall_Shadow(&system));
+                    }
+                    if (drawSurfaceScene && lightsWhichShouldIlluminateCount < SHADER_LIGHT_COUNT) {
+                        lightsWhichShouldIlluminate[lightsWhichShouldIlluminateCount] = &light;
+                        lightsWhichShouldIlluminateCount++;
+                    }
+                }
+            } break;
+            case R3D_OMNILIGHT: {
+                // If we have reached this point, it means that the system is within the maximum influence distance of the omni light. 
+                // Therefore, we don't need to perform a frustum test since it illuminates in all directions.
+                if (system.shadow != R3D_CAST_OFF && light.shadow) {
+                        batch.push_back(DrawCall_Shadow(&system));
+                }
+                if (drawSurfaceScene && lightsWhichShouldIlluminateCount < SHADER_LIGHT_COUNT) {
+                    lightsWhichShouldIlluminate[lightsWhichShouldIlluminateCount] = &light;
+                    lightsWhichShouldIlluminateCount++;
+                }
+            } break;
+        }
+    }
+
+    if (drawSurfaceScene) {
+        mSceneBatches.pushDrawCall(
+            system.surface.material.config,
+            DrawCall_Scene(&system, lightsWhichShouldIlluminate)
+        );
     }
 }
 
@@ -770,27 +888,59 @@ inline void Renderer::present()
 
     /* Shadow casting */
 
-    rlDisableColorBlend();  ///< We deactivate the mixing of colors because the omni light registers the distances in a color attachment
+    rlDisableColorBlend();  /**< We deactivate the color bleding because the omni
+                             *   lights write the distances in a color attachment
+                             */
+
+    rlMatrixMode(RL_PROJECTION);
+    rlPushMatrix();
 
     for (auto& [lightID, batch] : mShadowBatches) {
         if (batch.empty()) continue;
 
         const auto& light = mLights.at(lightID);
 
+        rlSetMatrixProjection(light.projMatrix());
+
         switch (light.type) {
             case R3D_DIRLIGHT:
-                renderShadowMapDirectional(light, batch);
-                break;
-            case R3D_SPOTLIGHT:
-                renderShadowMapSpot(light, batch);
-                break;
-            case R3D_OMNILIGHT:
-                renderShadowMapOmni(light, batch);
-                break;
+            case R3D_SPOTLIGHT: {
+                mShaderDepth.use();
+                light.map->begin();
+                {
+                    glClear(GL_DEPTH_BUFFER_BIT);
+                    rlSetMatrixModelview(light.viewMatrix());
+                    for (const auto& drawCall : batch) {
+                        drawCall.draw(light);
+                    }
+                }
+                light.map->end();
+            } break;
+            case R3D_OMNILIGHT: {
+                mShaderDepthCube.use();
+                light.map->begin();
+                {
+                    for (int i = 0; i < 6; i++) {
+                        light.map->bindFace(GLAttachement::COLOR_0, i);
+                        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+                        rlSetMatrixModelview(light.viewMatrix(i));
+                        for (const auto& drawCall : batch) {
+                            drawCall.draw(light);
+                        }
+                    }
+                }
+                light.map->end();
+            } break;
         }
 
         batch.clear();
     }
+
+    rlMatrixMode(RL_PROJECTION);
+    rlPopMatrix();
+
+    rlMatrixMode(RL_MODELVIEW);
+    rlLoadIdentity();
 
     /* Render scene */
 
@@ -824,11 +974,9 @@ inline void Renderer::present()
 
         /* Render skybox */
 
-        Quaternion quatSkybox = QuaternionIdentity();
-
         if (skybox != nullptr) {
             Vector3 rotSkybox = Vector3Scale(skybox->rotation, DEG2RAD);
-            quatSkybox = QuaternionFromEuler(rotSkybox.x, rotSkybox.y, rotSkybox.z);
+            Quaternion quatSkybox = QuaternionFromEuler(rotSkybox.x, rotSkybox.y, rotSkybox.z);
             static_cast<Skybox*>(skybox->internal)->draw(quatSkybox);
         }
 
@@ -836,8 +984,6 @@ inline void Renderer::present()
 
         for (auto& [config, batch] : mSceneBatches) {
             if (batch.empty()) continue;
-
-            const r3d::GLShader& shader = mShaderMaterials.at(config.shader);
 
             // TODO: Find a method to reduce calls to state changes, even if probably ignored by most drivers...
             switch (config.blendMode) {
@@ -884,10 +1030,15 @@ inline void Renderer::present()
                     break;
             }
 
+            ShaderMaterial& shader = mShaderMaterials.at(config.shader);
+
             shader.begin();
+            {
+                shader.setEnvironment(environment, mCamera.position);
                 for (const auto& drawCall : batch) {
-                    drawSurfaceScene(drawCall, shader, quatSkybox);
+                    drawCall.draw(shader);
                 }
+            }
             shader.end();
 
             batch.clear();
@@ -1128,19 +1279,16 @@ inline void Renderer::drawShadowMap(R3D_Light light, int x, int y, int width, in
 
 /* Private implementation */
 
-inline void Renderer::drawSurfaceShadow(const DrawCallShadow& drawCall, const Light& light) const
+inline void Renderer::drawMeshShadow(const Light& light, const Mesh& mesh, const Matrix& transform) const
 {
-    const ::Mesh& mesh = drawCall.surface->mesh;
-
-    Matrix matModel = MatrixMultiply(drawCall.transform, rlGetMatrixTransform());
     Matrix matView = rlGetMatrixModelview();
 
-    Matrix matModelView = MatrixMultiply(matModel, matView);
+    Matrix matModelView = MatrixMultiply(transform, matView);
     Matrix matProjection = rlGetMatrixProjection();
 
     if (light.type == R3D_OMNILIGHT) {
         rlSetUniform(mShaderDepthCube.locs[SHADER_LOC_VECTOR_VIEW], &light.position, SHADER_UNIFORM_VEC3, 1);
-        rlSetUniformMatrix(mShaderDepthCube.locs[SHADER_LOC_MATRIX_MODEL], matModel);
+        rlSetUniformMatrix(mShaderDepthCube.locs[SHADER_LOC_MATRIX_MODEL], transform);
     }
 
     if (!rlEnableVertexArray(mesh.vaoId)) {
@@ -1170,11 +1318,8 @@ inline void Renderer::drawSurfaceShadow(const DrawCallShadow& drawCall, const Li
             rlSetUniformMatrix(mShaderDepth.locs[SHADER_LOC_MATRIX_MVP], matMVP);
         }
 
-        if (mesh.indices != nullptr) {
-            rlDrawVertexArrayElements(0, 3 * mesh.triangleCount, 0);
-        } else {
-            rlDrawVertexArray(0, mesh.vertexCount);
-        }
+        if (mesh.indices == NULL) rlDrawVertexArray(0, mesh.vertexCount);
+        else rlDrawVertexArrayElements(0, 3 * mesh.triangleCount, 0);
     }
 
     rlDisableVertexArray();
@@ -1185,130 +1330,12 @@ inline void Renderer::drawSurfaceShadow(const DrawCallShadow& drawCall, const Li
     rlSetMatrixProjection(matProjection);
 }
 
-inline void Renderer::drawSurfaceScene(const DrawCallScene& drawCall, const GLShader& shader, const Quaternion& quatSkybox) const
+inline void Renderer::drawMeshScene(const Mesh& mesh, const Matrix& transform, ShaderMaterial& shader, R3D_MaterialConfig config) const
 {
-    const R3D_Skybox *skybox = environment.world.skybox;
-    const ::Mesh& mesh = *drawCall.surface.mesh;
-
-    const R3D_Material& material = drawCall.surface.material;
-    const R3D_MaterialConfig& config = material.config;
-
-    Matrix matModel = MatrixMultiply(drawCall.transform, rlGetMatrixTransform());
     Matrix matView = rlGetMatrixModelview();
 
-    Matrix matModelView = MatrixMultiply(matModel, matView);
+    Matrix matModelView = MatrixMultiply(transform, matView);
     Matrix matProjection = rlGetMatrixProjection();
-
-    shader.bindTexture("uTexAlbedo", GL_TEXTURE_2D, material.albedo.texture.id);
-    shader.setColor("uColAlbedo", material.albedo.color, true);
-
-    if (config.shader.diffuse != R3D_DIFFUSE_UNSHADED) {
-        shader.setValue("uMatModel", matModel);
-        shader.setValue("uMatNormal", MatrixTranspose(MatrixInvert(matModel)));
-
-        shader.setValue("uViewPos", mCamera.position);
-
-        if (config.shader.flags & R3D_MATERIAL_FLAG_SKY_IBL) {
-            shader.setValue("uHasSkybox", skybox != nullptr);
-            if (skybox != nullptr) {
-                shader.bindTexture("uCubeIrradiance", GL_TEXTURE_CUBE_MAP, static_cast<Skybox*>(skybox->internal)->getIrradianceCubemapID());
-                shader.bindTexture("uCubePrefilter", GL_TEXTURE_CUBE_MAP, static_cast<Skybox*>(skybox->internal)->getPrefilterCubemapID());
-                shader.bindTexture("uTexBrdfLUT", GL_TEXTURE_2D, static_cast<Skybox*>(skybox->internal)->getBrdfLUTTextureID());
-                shader.setValue("uQuatSkybox", quatSkybox);
-            }
-        }
-
-        if (skybox == nullptr || !(config.shader.flags & R3D_MATERIAL_FLAG_SKY_IBL)) {
-            shader.setColor("uColAmbient", environment.world.ambient, false);
-        }
-
-        if (environment.bloom.mode != R3D_BLOOM_DISABLED) {
-            shader.setValue("uBloomHdrThreshold", environment.bloom.hdrThreshold);
-        }
-
-        if (config.shader.flags & R3D_MATERIAL_FLAG_MAP_EMISSION) {
-            shader.bindTexture("uTexEmission", GL_TEXTURE_2D, material.emission.texture.id);
-            shader.setColor("uColEmission", material.emission.color, false);
-            shader.setValue("uValEmissionEnergy", material.emission.energy);
-        }
-
-        if (config.shader.flags & R3D_MATERIAL_FLAG_MAP_NORMAL) {
-            shader.bindTexture("uTexNormal", GL_TEXTURE_2D, material.normal.texture.id);
-        }
-
-        if (config.shader.flags & R3D_MATERIAL_FLAG_MAP_AO) {
-            shader.bindTexture("uTexAO", GL_TEXTURE_2D, material.ao.texture.id);
-            shader.setValue("uValAOLightAffect", material.ao.lightAffect);
-        }
-
-        shader.bindTexture("uTexMetalness", GL_TEXTURE_2D, material.metalness.texture.id);
-        shader.setValue("uValMetalness", material.metalness.factor);
-
-        shader.bindTexture("uTexRoughness", GL_TEXTURE_2D, material.roughness.texture.id);
-        shader.setValue("uValRoughness", material.roughness.factor);
-
-        int lightIndex = 0;
-
-        for (const auto light : drawCall.lights) {
-            if (light == nullptr) break;
- 
-            char lightStr[32] = {};
-            std::snprintf(lightStr, sizeof(lightStr), "uLights[%i].%%s", lightIndex);
-
-            shader.setValue(TextFormat(lightStr, "enabled"), true);
-            shader.setColor(TextFormat(lightStr, "color"), light->color, false);
-            shader.setValue(TextFormat(lightStr, "energy"), light->energy);
-            shader.setValue(TextFormat(lightStr, "type"), static_cast<int>(light->type));
-
-            if (config.shader.flags & R3D_MATERIAL_FLAG_RECEIVE_SHADOW) {
-                shader.setValue(TextFormat(lightStr, "shadow"), light->shadow);
-                if (light->shadow) {
-                    shader.setValue(TextFormat(lightStr, "shadowBias"), light->shadowBias);
-                }
-            }
-
-            switch (light->type) {
-                case R3D_DIRLIGHT:
-                    shader.setValue(TextFormat(lightStr, "direction"), light->direction);
-                    if (light->shadow && (config.shader.flags & R3D_MATERIAL_FLAG_RECEIVE_SHADOW)) {
-                        shader.setValue(TextFormat("uMatLightMVP[%i]", lightIndex), light->vpMatrix());
-                        shader.setValue(TextFormat(lightStr, "shadowMapTxlSz"), light->map->texelWidth());
-                        shader.bindTexture(TextFormat(lightStr, "shadowMap"),
-                            light->map->attachement(GLAttachement::DEPTH));
-                    }
-                    break;
-                case R3D_SPOTLIGHT:
-                    shader.setValue(TextFormat(lightStr, "position"), light->position);
-                    shader.setValue(TextFormat(lightStr, "direction"), light->direction);
-                    shader.setValue(TextFormat(lightStr, "maxDistance"), light->maxDistance);
-                    shader.setValue(TextFormat(lightStr, "attenuation"), light->attenuation);
-                    shader.setValue(TextFormat(lightStr, "innerCutOff"), light->innerCutOff);
-                    shader.setValue(TextFormat(lightStr, "outerCutOff"), light->outerCutOff);
-                    if (light->shadow && (config.shader.flags & R3D_MATERIAL_FLAG_RECEIVE_SHADOW)) {
-                        shader.setValue(TextFormat("uMatLightMVP[%i]", lightIndex), light->vpMatrix());
-                        shader.setValue(TextFormat(lightStr, "shadowMapTxlSz"), light->map->texelWidth());
-                        shader.bindTexture(TextFormat(lightStr, "shadowMap"),
-                            light->map->attachement(GLAttachement::DEPTH));
-                    }
-                    break;
-                case R3D_OMNILIGHT:
-                    shader.setValue(TextFormat(lightStr, "position"), light->position);
-                    shader.setValue(TextFormat(lightStr, "maxDistance"), light->maxDistance);
-                    shader.setValue(TextFormat(lightStr, "attenuation"), light->attenuation);
-                    if (light->shadow && (config.shader.flags & R3D_MATERIAL_FLAG_RECEIVE_SHADOW)) {
-                        shader.bindTexture(TextFormat(lightStr, "shadowCubemap"),
-                            light->map->attachement(GLAttachement::COLOR_0));
-                    }
-                    break;
-            }
-
-            lightIndex++;
-        }
-
-        for (int i = lightIndex; i < SHADER_LIGHT_COUNT; i++) {
-            shader.setValue(TextFormat("uLights[%i].enabled", i), false);
-        }
-    }
 
     // Try binding vertex array objects (VAO) or use VBOs if not possible
     if (!rlEnableVertexArray(mesh.vaoId))
@@ -1376,31 +1403,16 @@ inline void Renderer::drawSurfaceScene(const DrawCallScene& drawCall, const GLSh
     int eyeCount = 1;
     if (rlIsStereoRenderEnabled()) eyeCount = 2;
 
-    for (int eye = 0; eye < eyeCount; eye++)
-    {
-        // Calculate model-view-projection matrix (MVP)
-        Matrix matModelViewProjection = MatrixIdentity();
+    for (int eye = 0; eye < eyeCount; eye++) {
         if (eyeCount == 1) {
-            matModelViewProjection = MatrixMultiply(matModelView, matProjection);
+            shader.setMatMVP(MatrixMultiply(matModelView, matProjection));
         } else {
-            // Setup current eye viewport (half screen width)
             glViewport(eye*rlGetFramebufferWidth()/2, 0, rlGetFramebufferWidth()/2, rlGetFramebufferHeight());
-            matModelViewProjection = MatrixMultiply(MatrixMultiply(matModelView, rlGetMatrixViewOffsetStereo(eye)), rlGetMatrixProjectionStereo(eye));
+            shader.setMatMVP(MatrixMultiply(MatrixMultiply(matModelView, rlGetMatrixViewOffsetStereo(eye)), rlGetMatrixProjectionStereo(eye)));
         }
-
-        // Send combined model-view-projection matrix to shader
-        shader.setValue("uMatMVP", matModelViewProjection);
-
-        // Draw mesh
-        if (mesh.indices != NULL) {
-            rlDrawVertexArrayElements(0, 3 * mesh.triangleCount, 0);
-        } else {
-            rlDrawVertexArray(0, mesh.vertexCount);
-        }
+        if (mesh.indices == NULL) rlDrawVertexArray(0, mesh.vertexCount);
+        else rlDrawVertexArrayElements(0, 3 * mesh.triangleCount, 0);
     }
-
-    // Unbind all bound texture maps
-    shader.unbindTextures();
 
     // Disable all possible vertex array objects (or VBOs)
     rlDisableVertexArray();
@@ -1412,83 +1424,109 @@ inline void Renderer::drawSurfaceScene(const DrawCallScene& drawCall, const GLSh
     rlSetMatrixProjection(matProjection);
 }
 
-inline void Renderer::renderShadowMapDirectional(const Light& light, const std::vector<DrawCallShadow>& batch) const
+
+/* DrawCall_Shadow implementation */
+
+inline DrawCall_Shadow::DrawCall_Shadow(const Mesh* mesh, const Matrix& transform)
+    : mCall(Surface { mesh, transform })
+{ }
+
+inline DrawCall_Shadow::DrawCall_Shadow(const R3D_ParticleSystemCPU* system)
+    : mCall(ParticlesCPU { system })
+{ }
+
+inline void DrawCall_Shadow::draw(const Light& light) const
 {
-    mShaderDepth.use();
-    light.map->begin();
-    {
-        glClear(GL_DEPTH_BUFFER_BIT);
-
-        rlMatrixMode(RL_PROJECTION);
-        rlPushMatrix();
-
-        rlSetMatrixProjection(light.projMatrix());
-        rlSetMatrixModelview(light.viewMatrix());
-
-        for (const auto& drawCall : batch) {
-            drawSurfaceShadow(drawCall, light);
-        }
-
-        rlMatrixMode(RL_PROJECTION);
-        rlPopMatrix();
-
-        rlMatrixMode(RL_MODELVIEW);
-        rlLoadIdentity();
+    switch (mCall.index()) {
+        case 0: drawMesh(light); break;
+        case 1: drawParticlesCPU(light); break;
     }
-    light.map->end();
 }
 
-inline void Renderer::renderShadowMapSpot(const Light& light, const std::vector<DrawCallShadow>& batch) const
+inline void DrawCall_Shadow::drawMesh(const Light& light) const
 {
-    mShaderDepth.use();
-    light.map->begin();
-    {
-        glClear(GL_DEPTH_BUFFER_BIT);
-
-        rlMatrixMode(RL_PROJECTION);
-        rlPushMatrix();
-
-        rlSetMatrixProjection(light.projMatrix());
-        rlSetMatrixModelview(light.viewMatrix());
-
-        for (const auto& drawCall : batch) {
-            drawSurfaceShadow(drawCall, light);
-        }
-
-        rlMatrixMode(RL_PROJECTION);
-        rlPopMatrix();
-
-        rlMatrixMode(RL_MODELVIEW);
-        rlLoadIdentity();
-    }
-    light.map->end();
+    const auto& call = std::get<0>(mCall);
+    gRenderer->drawMeshShadow(light, *call.mesh, call.transform);
 }
 
-inline void Renderer::renderShadowMapOmni(const Light& light, const std::vector<DrawCallShadow>& batch) const
+inline void DrawCall_Shadow::drawParticlesCPU(const Light& light) const
 {
-    rlMatrixMode(RL_PROJECTION);
-    rlPushMatrix();
-    rlSetMatrixProjection(light.projMatrix());
-
-    mShaderDepthCube.use();
-    light.map->begin();
-    {
-        for (int i = 0; i < 6; i++) {
-            light.map->bindFace(GLAttachement::COLOR_0, i);
-            glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-            rlSetMatrixModelview(light.viewMatrix(i));
-            for (const auto& drawCall : batch) {
-                drawSurfaceShadow(drawCall, light);
-            }
-        }
+    const auto& call = std::get<1>(mCall);
+    for (const auto& particle : *static_cast<r3d::ParticleEmitterCPU*>(call.system->internal)) {
+        Matrix transform = MatrixMultiply(
+            MatrixMultiply(
+                MatrixScale(particle.scale.x, particle.scale.y, particle.scale.z),
+                MatrixRotateXYZ(particle.rotation)
+            ),
+            MatrixTranslate(particle.position.x, particle.position.y, particle.position.z)
+        );
+        gRenderer->drawMeshShadow(
+            light, call.system->surface.mesh,
+            MatrixMultiply(transform, rlGetMatrixTransform())
+        );
     }
-    light.map->end();
+}
 
-    rlMatrixMode(RL_PROJECTION);
-    rlPopMatrix();
 
-    rlMatrixMode(RL_MODELVIEW);
-    rlLoadIdentity();
+/* DrawCall_Scene implementation */
+
+inline DrawCall_Scene::DrawCall_Scene(const R3D_Surface& surface, const Matrix& transform, const ShaderLightArray& lights)
+    : mCall(Surface { &surface.mesh, surface.material, transform, lights })
+{ }
+
+inline DrawCall_Scene::DrawCall_Scene(R3D_ParticleSystemCPU* system, const ShaderLightArray& lights)
+    : mCall(ParticlesCPU { system, lights })
+{ }
+
+inline void DrawCall_Scene::draw(ShaderMaterial& shader) const
+{
+    switch (mCall.index()) {
+        case 0: drawMesh(shader); break;
+        case 1: drawParticlesCPU(shader); break;
+    }
+}
+
+inline void DrawCall_Scene::drawMesh(ShaderMaterial& shader) const
+{
+    const auto& call = std::get<0>(mCall);
+
+    shader.setMaterial(call.surface.material);
+    shader.setMatModel(call.transform);
+    shader.setLights(call.lights);
+
+    gRenderer->drawMeshScene(*call.surface.mesh, call.transform, shader, call.surface.material.config);
+}
+
+inline void DrawCall_Scene::drawParticlesCPU(ShaderMaterial& shader) const
+{
+    auto& call = std::get<1>(mCall);
+
+    Color baseColor = call.system->surface.material.albedo.color;
+
+    for (const auto& particle : *static_cast<r3d::ParticleEmitterCPU*>(call.system->internal)) {
+        Matrix transform = MatrixMultiply(
+            MatrixMultiply(
+                MatrixScale(particle.scale.x, particle.scale.y, particle.scale.z),
+                MatrixRotateXYZ(particle.rotation)
+            ),
+            MatrixTranslate(particle.position.x, particle.position.y, particle.position.z)
+        );
+
+        call.system->surface.material.albedo.color = (Color) {
+            static_cast<uint8_t>((baseColor.r * particle.color.r) / 255),
+            static_cast<uint8_t>((baseColor.g * particle.color.g) / 255),
+            static_cast<uint8_t>((baseColor.b * particle.color.b) / 255),
+            static_cast<uint8_t>((baseColor.a * particle.color.a) / 255)
+        };
+
+        shader.setMaterial(call.system->surface.material);
+        shader.setMatModel(transform);
+        shader.setLights(call.lights);
+
+        gRenderer->drawMeshScene(call.system->surface.mesh, transform, shader, call.system->surface.material.config);
+    }
+
+    call.system->surface.material.albedo.color = baseColor;
 }
 
 } // namespace r3d

@@ -52,16 +52,16 @@ int main(void)
 
             R3D_Begin(camera);
 
-                R3D_Draw(&ground);
+                R3D_DrawModel(&ground);
 
                 R3D_SetMapAlbedo(&cube, 0, NULL, (Color) { 255, 0, 0, 255 });
-                R3D_DrawEx(&cube, (Vector3) { -5, 0.5f, 0 }, 1.0f);
+                R3D_DrawModelEx(&cube, (Vector3) { -5, 0.5f, 0 }, 1.0f);
 
                 R3D_SetMapAlbedo(&cube, 0, NULL, (Color) { 0, 255, 0, 255 });
-                R3D_DrawEx(&cube, (Vector3) { 0, 0.5f, 0 }, 1.0f);
+                R3D_DrawModelEx(&cube, (Vector3) { 0, 0.5f, 0 }, 1.0f);
 
                 R3D_SetMapAlbedo(&cube, 0, NULL, (Color) { 0, 0, 255, 255 });
-                R3D_DrawEx(&cube, (Vector3) { 5, 0.5f, 0 }, 1.0f);
+                R3D_DrawModelEx(&cube, (Vector3) { 5, 0.5f, 0 }, 1.0f);
 
             R3D_End();
 
