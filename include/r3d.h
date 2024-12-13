@@ -676,9 +676,24 @@ void R3D_DrawModelEx(const R3D_Model* model, Vector3 position, float scale);
  * @param rotationAxis The axis around which the model should be rotated.
  * @param rotationAngle The angle of rotation (in degrees) around the specified axis.
  * @param scale        A scaling factor to apply to the model in each axis.
+ *
+ * @warning Passing a `nullptr` as the `system` parameter will result in undefined behavior.
  */
 void R3D_DrawModelPro(const R3D_Model* model, Vector3 position, Vector3 rotationAxis, float rotationAngle, Vector3 scale);
 
+/**
+ * @brief Renders the current state of a CPU-based particle system.
+ *
+ * This function draws the particles of a CPU-simulated particle system 
+ * in their current state. It does not modify the simulation or update 
+ * particle properties such as position, velocity, or lifetime.
+ *
+ * @param system A pointer to the `R3D_ParticleSystemCPU` to be rendered.
+ *               The particle system must be properly initialized and updated 
+ *               to the desired state before calling this function.
+ *
+ * @warning Passing a `nullptr` as the `system` parameter will result in undefined behavior.
+ */
 void R3D_DrawParticleSystemCPU(R3D_ParticleSystemCPU* system);
 
 /**
