@@ -20,8 +20,6 @@ endif()
 
 option(R3D_BUILD_EXAMPLES "Build the examples for the project" ${R3D_IS_MAIN})
 
-add_subdirectory(${R3D_ROOT_PATH}/external/raylib)
-
 include(${R3D_ROOT_PATH}/samples/CMakeLists.txt)
 include(${R3D_ROOT_PATH}/src/CMakeLists.txt)
 
@@ -37,5 +35,6 @@ target_include_directories(${PROJECT_NAME} PUBLIC
 target_link_libraries(${PROJECT_NAME} raylib)
 
 if(R3D_BUILD_EXAMPLES)
+    add_subdirectory(${R3D_ROOT_PATH}/external/raylib)
     include(${R3D_ROOT_PATH}/examples/CMakeLists.txt)
 endif()
