@@ -25,7 +25,7 @@
 #include "../detail/GL/GLFramebuffer.hpp"
 #include "../detail/RenderTarget.hpp"
 #include "../detail/Frustum.hpp"
-#include "../detail/Math.hpp"
+#include "../detail/Math.h"
 
 #include <raylib.h>
 #include <raymath.h>

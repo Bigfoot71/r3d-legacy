@@ -19,6 +19,8 @@
 
 #include "r3d.h"
 
+#include "../detail/Math.h"
+
 #include <raymath.h>
 
 R3D_InterpolationCurve R3D_LoadInterpolationCurve(int capacity)
@@ -42,7 +44,8 @@ void R3D_UnloadInterpolationCurve(R3D_InterpolationCurve* curve)
 bool R3D_AddKeyframe(R3D_InterpolationCurve* curve, float time, float value)
 {
     if (curve->size >= curve->capacity) {
-        unsigned int newCapacity = curve->capacity * 2;
+        // We resize the buffer to the next power of 2
+        unsigned int newCapacity = nextPOT32(curve->capacity);
         R3D_Keyframe *newKeyframes = realloc(curve->keyframes, newCapacity * sizeof(R3D_Keyframe));
         if (!newKeyframes) {
             return false; // Memory allocation failed

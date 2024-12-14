@@ -17,15 +17,15 @@
  *   3. This notice may not be removed or altered from any source distribution.
  */
 
-#ifndef R3D_PRIV_UTILS_MATH_HPP
-#define R3D_PRIV_UTILS_MATH_HPP
+#ifndef R3D_DETAIL_MATH_H
+#define R3D_DETAIL_MATH_H
 
 #include "r3d.h"
 
 #include <raylib.h>
 #include <raymath.h>
 
-#include <cstdlib>
+#ifdef __cplusplus
 
 namespace r3d {
 
@@ -134,4 +134,52 @@ inline Matrix getBillboardRotationMatrix(R3D_BillboardMode mode, const Vector3 m
 
 } // namespace r3d
 
-#endif
+#else // C
+
+#include <stdint.h>
+
+static inline uint32_t nextPOT32(uint32_t value)
+{
+    if (value == 0) {
+        return 1;
+    }
+
+    if ((value & (value - 1)) == 0) {
+        return value << 1;
+    }
+
+    value--;
+    value |= value >> 1;
+    value |= value >> 2;
+    value |= value >> 4;
+    value |= value >> 8;
+    value |= value >> 16;
+    value++;
+
+    return value;
+}
+
+static inline uint64_t nextPOT64(uint64_t value)
+{
+    if (value == 0) {
+        return 1;
+    }
+
+    if ((value & (value - 1)) == 0) {
+        return value << 1;
+    }
+
+    value--;
+    value |= value >> 1;
+    value |= value >> 2;
+    value |= value >> 4;
+    value |= value >> 8;
+    value |= value >> 16;
+    value |= value >> 32;
+    value++;
+
+    return value;
+}
+
+#endif // __cplusplus
+#endif // R3D_DETAIL_MATH_HPP
