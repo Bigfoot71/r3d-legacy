@@ -19,7 +19,7 @@
 
 #include "r3d.h"
 
-#include "./particle_system_cpu.hpp"
+#include "../detail/RandomGenerator.hpp"
 
 #include <raylib.h>
 #include <raymath.h>
@@ -31,9 +31,11 @@
 
 R3D_ParticleSystemCPU* R3D_LoadParticleEmitterCPU(const Mesh* mesh, const R3D_Material* material, int maxParticles)
 {
-    R3D_ParticleSystemCPU *system = new R3D_ParticleSystemCPU;
+    R3D_ParticleSystemCPU *system = new R3D_ParticleSystemCPU{};
 
-    system->internal = new r3d::ParticleEmitterCPU(maxParticles);
+    system->particles = new R3D_Particle[maxParticles];
+    system->maxParticles = maxParticles;
+    system->particleCount = 0;
 
     system->surface = (R3D_Surface) {
         .material = *material,
@@ -61,6 +63,7 @@ R3D_ParticleSystemCPU* R3D_LoadParticleEmitterCPU(const Mesh* mesh, const R3D_Ma
     system->lifetime = 1.0f;
     system->lifetimeVariance = 0.0f;
 
+    system->emissionTimer = 0.0f;
     system->emissionRate = 1.0f;
     system->spreadAngle = 0.0f;
 
@@ -85,15 +88,14 @@ R3D_ParticleSystemCPU* R3D_LoadParticleEmitterCPU(const Mesh* mesh, const R3D_Ma
 void R3D_UnloadParticleEmitterCPU(R3D_ParticleSystemCPU* system)
 {
     if (system) {
+        delete[] system->particles;
         delete system;
     }
 }
 
 bool R3D_EmitParticleCPU(R3D_ParticleSystemCPU* system)
 {
-    r3d::ParticleEmitterCPU& emitter = *static_cast<r3d::ParticleEmitterCPU*>(system->internal);
-
-    if (emitter.count() >= emitter.capacity()) {
+    if (system->particleCount >= system->maxParticles) {
         return false;
     }
 
@@ -101,8 +103,8 @@ bool R3D_EmitParticleCPU(R3D_ParticleSystemCPU* system)
     Vector3 direction = Vector3Normalize(system->initialVelocity);
 
     // Generate random angles
-    float elevation = emitter.gen.rand(0.0f, DEG2RAD * system->spreadAngle);
-    float azimuth = emitter.gen.rand(0.0f, 2.0f * PI);
+    float elevation = r3d::RandomGenerator::singleton().rand(0.0f, DEG2RAD * system->spreadAngle);
+    float azimuth = r3d::RandomGenerator::singleton().rand(0.0f, 2.0f * PI);
 
     // Precompute trigonometric values for the cone
     float cosElevation = std::cos(elevation);
@@ -135,60 +137,62 @@ bool R3D_EmitParticleCPU(R3D_ParticleSystemCPU* system)
     // Scale the final velocity
     velocity = Vector3Scale(velocity, Vector3Length(system->initialVelocity));
 
-    emitter.add({
-        system->position,
-        Vector3AddValue(
-            system->initialScale, emitter.gen.rand(-system->scaleVariance, system->scaleVariance)
-        ),
-        {
-            (system->initialRotation.x + emitter.gen.rand(-system->rotationVariance.x, system->rotationVariance.x)) * DEG2RAD,
-            (system->initialRotation.y + emitter.gen.rand(-system->rotationVariance.y, system->rotationVariance.y)) * DEG2RAD,
-            (system->initialRotation.z + emitter.gen.rand(-system->rotationVariance.z, system->rotationVariance.z)) * DEG2RAD
-        },
-        {
-            static_cast<uint8_t>(system->initialColor.r + emitter.gen.rand<int>(-system->colorVariance.r, system->colorVariance.r)),
-            static_cast<uint8_t>(system->initialColor.g + emitter.gen.rand<int>(-system->colorVariance.g, system->colorVariance.g)),
-            static_cast<uint8_t>(system->initialColor.g + emitter.gen.rand<int>(-system->colorVariance.b, system->colorVariance.b)),
-            static_cast<uint8_t>(system->initialColor.a + emitter.gen.rand<int>(-system->colorVariance.a, system->colorVariance.a))
-        },
-        {
-            velocity.x + emitter.gen.rand(-system->velocityVariance.x, system->velocityVariance.x),
-            velocity.y + emitter.gen.rand(-system->velocityVariance.y, system->velocityVariance.y),
-            velocity.z + emitter.gen.rand(-system->velocityVariance.z, system->velocityVariance.z)
-        },
-        {
-            system->initialAngularVelocity.x + emitter.gen.rand(-system->angularVelocityVariance.x, system->angularVelocityVariance.x),
-            system->initialAngularVelocity.y + emitter.gen.rand(-system->angularVelocityVariance.y, system->angularVelocityVariance.y),
-            system->initialAngularVelocity.z + emitter.gen.rand(-system->angularVelocityVariance.z, system->angularVelocityVariance.z)
-        },
-        system->lifetime + emitter.gen.rand(-system->lifetimeVariance, system->lifetimeVariance)
-    });
+    // Initialize particle
+    R3D_Particle particle{};
+    particle.lifetime = system->lifetime + r3d::RandomGenerator::singleton().rand(-system->lifetimeVariance, system->lifetimeVariance);
+    particle.position = system->position;
+    particle.rotation = {
+        (system->initialRotation.x + r3d::RandomGenerator::singleton().rand(-system->rotationVariance.x, system->rotationVariance.x)) * DEG2RAD,
+        (system->initialRotation.y + r3d::RandomGenerator::singleton().rand(-system->rotationVariance.y, system->rotationVariance.y)) * DEG2RAD,
+        (system->initialRotation.z + r3d::RandomGenerator::singleton().rand(-system->rotationVariance.z, system->rotationVariance.z)) * DEG2RAD
+    };
+    particle.scale = particle.baseScale = Vector3AddValue(
+        system->initialScale, r3d::RandomGenerator::singleton().rand(-system->scaleVariance, system->scaleVariance)
+    );
+    particle.velocity = particle.baseVelocity = {
+        velocity.x + r3d::RandomGenerator::singleton().rand(-system->velocityVariance.x, system->velocityVariance.x),
+        velocity.y + r3d::RandomGenerator::singleton().rand(-system->velocityVariance.y, system->velocityVariance.y),
+        velocity.z + r3d::RandomGenerator::singleton().rand(-system->velocityVariance.z, system->velocityVariance.z)
+    };
+    particle.angularVelocity = particle.baseAngularVelocity = {
+        system->initialAngularVelocity.x + r3d::RandomGenerator::singleton().rand(-system->angularVelocityVariance.x, system->angularVelocityVariance.x),
+        system->initialAngularVelocity.y + r3d::RandomGenerator::singleton().rand(-system->angularVelocityVariance.y, system->angularVelocityVariance.y),
+        system->initialAngularVelocity.z + r3d::RandomGenerator::singleton().rand(-system->angularVelocityVariance.z, system->angularVelocityVariance.z)
+    };
+    particle.color = {
+        static_cast<uint8_t>(system->initialColor.r + r3d::RandomGenerator::singleton().rand<int>(-system->colorVariance.r, system->colorVariance.r)),
+        static_cast<uint8_t>(system->initialColor.g + r3d::RandomGenerator::singleton().rand<int>(-system->colorVariance.g, system->colorVariance.g)),
+        static_cast<uint8_t>(system->initialColor.g + r3d::RandomGenerator::singleton().rand<int>(-system->colorVariance.b, system->colorVariance.b)),
+        static_cast<uint8_t>(system->initialColor.a + r3d::RandomGenerator::singleton().rand<int>(-system->colorVariance.a, system->colorVariance.a))
+    };
+    particle.baseOpacity = particle.color.a;
+
+    // Adding the particle to the system
+    system->particles[system->particleCount++] = particle;
 
     return true;
 }
 
 void R3D_UpdateParticleEmitterCPU(R3D_ParticleSystemCPU* system, float deltaTime)
 {
-    r3d::ParticleEmitterCPU& emitter = *static_cast<r3d::ParticleEmitterCPU*>(system->internal);
-
-    emitter.emissionTimer -= deltaTime;
+    system->emissionTimer -= deltaTime;
 
     if (system->emissionRate > 0.0f) {
-        while (emitter.emissionTimer <= 0.0f) {
+        while (system->emissionTimer <= 0.0f) {
             R3D_EmitParticleCPU(system);
-            emitter.emissionTimer += 1.0f / system->emissionRate;
+            system->emissionTimer += 1.0f / system->emissionRate;
             if (system->emissionRate <= 0.0f) {
                 break;
             }
         }
     }
 
-    for (int i = emitter.count() - 1; i >= 0; i--) {
-        r3d::Particle& particle = emitter[i];
+    for (int i = system->particleCount - 1; i >= 0; i--) {
+        R3D_Particle& particle = system->particles[i];
 
         particle.lifetime -= deltaTime;
         if (particle.lifetime <= 0.0f) {
-            emitter.remove(particle);
+            particle = system->particles[--system->particleCount];
             continue;
         }
 
@@ -236,20 +240,17 @@ void R3D_UpdateParticleEmitterCPU(R3D_ParticleSystemCPU* system, float deltaTime
 
 void R3D_UpdateParticleEmitterCPUAABB(R3D_ParticleSystemCPU* system)
 {
-    // Retrieve the internal particle emitter from the system
-    r3d::ParticleEmitterCPU& emitter = *static_cast<r3d::ParticleEmitterCPU*>(system->internal);
-
     // Initialize the AABB with extreme values (max for max bounds, min for min bounds)
     Vector3 aabbMin = { FLT_MAX, FLT_MAX, FLT_MAX };
     Vector3 aabbMax = { -FLT_MAX, -FLT_MAX, -FLT_MAX };
 
     // Loop over all particles in the emitter (considering the particle capacity)
-    for (int i = 0; i < emitter.capacity(); i++) {
+    for (int i = 0; i < system->maxParticles; i++) {
         // Emit a particle for the current iteration
         R3D_EmitParticleCPU(system);
 
         // Get the current particle from the emitter
-        const r3d::Particle& particle = emitter[i];
+        const R3D_Particle& particle = system->particles[i];
 
         // Calculate the position of the particle at half its lifetime (intermediate position)
         float halfLifetime = particle.lifetime * 0.5f;
@@ -278,7 +279,7 @@ void R3D_UpdateParticleEmitterCPUAABB(R3D_ParticleSystemCPU* system)
     }
 
     // Clear any previous state or data in the emitter
-    emitter.clear();
+    system->particleCount = 0;
 
     // Update the particle system's AABB with the calculated bounds
     system->aabb = { aabbMin, aabbMax };

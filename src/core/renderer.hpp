@@ -40,7 +40,6 @@
 #include "../detail/IDMan.hpp"
 #include "../detail/GL.hpp"
 
-#include "../objects/particle_system_cpu.hpp"
 #include "../objects/skybox.hpp"
 #include "../objects/model.hpp"
 #include "./lighting.hpp"
@@ -1505,7 +1504,8 @@ inline void DrawCall_Shadow::drawMesh(const Light& light) const
 inline void DrawCall_Shadow::drawParticlesCPU(const Light& light) const
 {
     const auto& call = std::get<1>(mCall);
-    for (const auto& particle : *static_cast<r3d::ParticleEmitterCPU*>(call.system->internal)) {
+    for (int i = 0; i < call.system->particleCount; i++) {
+        const R3D_Particle& particle = call.system->particles[i];
         Matrix transform = MatrixMultiply(
             MatrixMultiply(
                 MatrixScale(particle.scale.x, particle.scale.y, particle.scale.z),
@@ -1563,7 +1563,8 @@ inline void DrawCall_Scene::drawParticlesCPU(ShaderMaterial& shader) const
 
     Color baseColor = call.system->surface.material.albedo.color;
 
-    for (const auto& particle : *static_cast<r3d::ParticleEmitterCPU*>(call.system->internal)) {
+    for (int i = 0; i < call.system->particleCount; i++) {
+        const R3D_Particle& particle = call.system->particles[i];
         Matrix transform = MatrixMultiply(
             MatrixMultiply(
                 MatrixScale(particle.scale.x, particle.scale.y, particle.scale.z),

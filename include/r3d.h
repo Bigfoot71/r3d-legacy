@@ -432,6 +432,31 @@ typedef struct {
 } R3D_InterpolationCurve;
 
 /**
+ * @struct R3D_Particle
+ * @brief Represents a particle in a 3D particle system, with properties
+ *        such as position, velocity, rotation, and color modulation.
+ */
+typedef struct {
+
+    float lifetime;                 /**< The lifetime of the particle in seconds. */
+    Vector3 position;               /**< The current position of the particle in 3D space. */
+    Vector3 rotation;               /**< The current rotation of the particle in radians (Euler angles). */
+
+    Vector3 scale;                  /**< The current scale of the particle in 3D space. */
+    Vector3 baseScale;              /**< The initial scale of the particle in 3D space. */
+
+    Vector3 velocity;               /**< The current velocity of the particle in 3D space. */
+    Vector3 baseVelocity;           /**< The initial velocity of the particle in 3D space. */
+
+    Vector3 angularVelocity;        /**< The current angular velocity in radians (Euler angles). */
+    Vector3 baseAngularVelocity;    /**< The initial angular velocity in radians (Euler angles). */
+
+    Color color;                    /**< The current color modulation of the particle. */
+    unsigned char baseOpacity;      /**< The initial opacity of the particle (0-255). */
+
+} R3D_Particle;
+
+/**
  * @brief Represents a CPU-based particle system with various properties and settings.
  * 
  * This structure contains configuration data for a particle system, such as mesh information, initial properties,
@@ -439,7 +464,9 @@ typedef struct {
  */
 typedef struct {
 
-    void *internal;                     /**< Internal data for the particle system, used by the system's implementation. */
+    R3D_Particle *particles;            /**< Pointer to the array of particles in the system. */
+    int particleCount;                  /**< The current number of active particles in the system. */
+    int maxParticles;                   /**< The maximum number of particles the system can manage. */
 
     R3D_Surface surface;                /**< The mesh and material for the particle system. */
 
@@ -464,6 +491,7 @@ typedef struct {
     float lifetime;                     /**< The lifetime of the particles in seconds. Default: 1.0f. */
     float lifetimeVariance;             /**< The variance in lifetime in seconds. Default: 0.0f. */
 
+    float emissionTimer;                /**< Use to control automatic emission, should not be modified manually. */
     float emissionRate;                 /**< The rate of particle emission in particles per second. Default: 10.0f. */
     float spreadAngle;                  /**< The angle of propagation of the particles in a cone (degrees). Default: 0.0f. */
 
