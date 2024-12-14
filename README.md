@@ -1,8 +1,12 @@
 # R3D - 3D Rendering Library for raylib
 
+<img align="left" style="width:260px" src="https://github.com/Bigfoot71/r3d/blob/master/logo.png" width="288px">
+
 R3D is a 3D rendering library designed to work with [raylib](https://www.raylib.com/). It offers features for lighting, shadows, materials, post effects, and more.
 
-This library is primarily written in C++, but the **API is C compatible**, making it easy to integrate into projects using C or C++.
+Primarily written in C++, the **API is C compatible**, making it easy to integrate into projects using C or C++.
+
+R3D is ideal for developers who want to add 3D rendering to their raylib projects without building a full rendering engine from scratch.
 
 ---
 
