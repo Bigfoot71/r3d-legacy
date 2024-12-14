@@ -32,6 +32,12 @@ namespace r3d {
 class RandomGenerator
 {
 public:
+    static RandomGenerator& singleton() {
+        static RandomGenerator gen(0x9E3779B97F4A7C15);
+        return gen;
+    }
+
+public:
     constexpr RandomGenerator(uint64_t seed) noexcept
         : mState{
             splitmix64(seed),
