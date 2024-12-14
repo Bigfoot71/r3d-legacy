@@ -1,0 +1,5 @@
+- CSM or alternative support for directional light shadows
+- Add parallax mapping support in the material shader
+- Add SSAO support in the post-effects shader
+- Support for custom material shaders
+- Support for OpenGL ES 3.0
