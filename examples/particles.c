@@ -1,4 +1,3 @@
-#include "raylib.h"
 #include <r3d.h>
 
 #ifndef R3D_ASSETS_PATH

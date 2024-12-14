@@ -24,7 +24,7 @@ Texture2D genLogoR3D(void)
 
 int main(void)
 {
-    InitWindow(800, 600, "R3D - Toon");
+    InitWindow(800, 600, "R3D - Logo");
     SetTargetFPS(60);
 
     Texture2D texR3D = genLogoR3D();

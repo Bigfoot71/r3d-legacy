@@ -17,7 +17,7 @@ Texture loadTexture(const char* fileName)
 
 int main(void)
 {
-    InitWindow(800, 600, "PBR preview");
+    InitWindow(800, 600, "R3D - PBR demo");
 
     Camera camera = {
         .position = (Vector3) { 0.0f, 0.0f, 4.0f },
