@@ -1,6 +1,6 @@
 # R3D - 3D Rendering Library for raylib
 
-<img align="left" style="width:260px" src="https://github.com/Bigfoot71/r3d/blob/master/logo.png" width="288px">
+<img  align="left" style="width:152px" src="https://github.com/Bigfoot71/r3d/blob/master/logo.png" width="124px">
 
 R3D is a 3D rendering library designed to work with [raylib](https://www.raylib.com/). It offers features for lighting, shadows, materials, post effects, and more.
 
