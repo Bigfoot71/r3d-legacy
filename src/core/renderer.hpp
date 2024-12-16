@@ -696,11 +696,7 @@ inline void Renderer::drawModel(const R3D_Model& model, const Vector3& position,
     transform = MatrixMultiply(transform, R3D_TransformToGlobal(&model.transform));
     transform = MatrixMultiply(transform, rlGetMatrixTransform());
 
-    const Vector3 modelPosition = {
-        transform.m12,
-        transform.m13,
-        transform.m14
-    };
+    const Vector3 modelPosition = getMatrixTrasnlation(transform);
 
     if (model.billboard != R3D_BILLBOARD_DISABLED) {
         Matrix billboardRotation = getBillboardRotationMatrix(
@@ -968,13 +964,17 @@ inline void Renderer::present()
     rlLoadIdentity();
 
     /* Sorting scene depth if necessary */
+    
+    const Vector3 camPos = mCamera.position;
 
     switch (depthSortingOrder) {
         case R3D_DEPTH_SORT_FAR_TO_NEAR: {
             for (auto& [_, batch] : mSceneBatches) {
-                std::sort(batch.begin(), batch.end(), [](const DrawCall_Scene& a, const DrawCall_Scene& b) {
+                std::sort(batch.begin(), batch.end(), [camPos](const DrawCall_Scene& a, const DrawCall_Scene& b) {
                     if (a.surfaceTransform() && b.surfaceTransform()) {
-                        return a.surfaceTransform()->m14 > b.surfaceTransform()->m14;
+                        float distanceA = Vector3DistanceSqr(camPos, getMatrixTrasnlation(*a.surfaceTransform()));
+                        float distanceB = Vector3DistanceSqr(camPos, getMatrixTrasnlation(*b.surfaceTransform()));
+                        return distanceA > distanceB;
                     }
                     return a.surfaceTransform() != nullptr;
                 });
@@ -982,9 +982,11 @@ inline void Renderer::present()
         } break;
         case R3D_DEPTH_SORT_NEAR_TO_FAR: {
             for (auto& [_, batch] : mSceneBatches) {
-                std::sort(batch.begin(), batch.end(), [](const DrawCall_Scene& a, const DrawCall_Scene& b) {
+                std::sort(batch.begin(), batch.end(), [camPos](const DrawCall_Scene& a, const DrawCall_Scene& b) {
                     if (a.surfaceTransform() && b.surfaceTransform()) {
-                        return a.surfaceTransform()->m14 < b.surfaceTransform()->m14;
+                        float distanceA = Vector3DistanceSqr(camPos, getMatrixTrasnlation(*a.surfaceTransform()));
+                        float distanceB = Vector3DistanceSqr(camPos, getMatrixTrasnlation(*b.surfaceTransform()));
+                        return distanceA < distanceB;
                     }
                     return a.surfaceTransform() != nullptr;
                 });
@@ -993,6 +995,7 @@ inline void Renderer::present()
         default:
             break;
     }
+
 
     /* Render scene */
 
@@ -1574,7 +1577,7 @@ inline void DrawCall_Scene::drawParticlesCPU(ShaderMaterial& shader) const
         );
 
         if (call.system->billboard != R3D_BILLBOARD_DISABLED) {
-            Vector3 modelPos = { transform.m12, transform.m13, transform.m14 };
+            Vector3 modelPos = getMatrixTrasnlation(transform);
             Matrix billboardRotation = getBillboardRotationMatrix(
                 call.system->billboard, modelPos, gRenderer->mCamera.position
             );

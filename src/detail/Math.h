@@ -30,6 +30,24 @@
 namespace r3d {
 
 /**
+ * @brief Extracts the translation part of a matrix.
+ * 
+ * This function retrieves the translation components (m12, m13, m14)
+ * from the given transformation matrix and returns them as a 3D vector.
+ * 
+ * @param transform The transformation matrix from which to extract the translation part.
+ * @return Vector3 The extracted translation vector (x, y, z).
+ */
+inline Vector3 getMatrixTrasnlation(const Matrix& transform)
+{
+    return {
+        transform.m12,
+        transform.m13,
+        transform.m14
+    };
+}
+
+/**
  * @brief Determines which cube map face corresponds to the given direction.
  * 
  * This function checks the absolute values of the direction vector's components (X, Y, Z) 
