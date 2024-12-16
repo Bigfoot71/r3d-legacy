@@ -1565,6 +1565,15 @@ inline void DrawCall_Scene::drawParticlesCPU(ShaderMaterial& shader) const
     auto& call = std::get<1>(mCall);
 
     Color baseColor = call.system->surface.material.albedo.color;
+    const Vector3& camPos = gRenderer->mCamera.position;
+
+    std::sort(call.system->particles, call.system->particles + call.system->particleCount,
+        [camPos](const R3D_Particle& a, const R3D_Particle& b) {
+            float distanceA = Vector3DistanceSqr(camPos, a.position);
+            float distanceB = Vector3DistanceSqr(camPos, b.position);
+            return distanceA > distanceB;
+        }
+    );
 
     for (int i = 0; i < call.system->particleCount; i++) {
         const R3D_Particle& particle = call.system->particles[i];
