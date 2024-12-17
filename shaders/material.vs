@@ -40,6 +40,9 @@ uniform mat4 uMatMVP;
 uniform mat4 uMatLightMVP[NUM_LIGHTS];
 #endif
 
+uniform vec2 uTexCoordOffset;
+uniform vec2 uTexCoordScale;
+
 // === Outputs ===
 
 out vec3 vPosition;
@@ -63,8 +66,8 @@ out vec4 vPosLightSpace[NUM_LIGHTS];
 void main()
 {
     vPosition = vec3(uMatModel * vec4(aPosition, 1.0));
+    vTexCoord = uTexCoordOffset + aTexCoord * uTexCoordScale;
     vNormal = normalize(vec3(uMatNormal * vec4(aNormal, 1.0)));
-    vTexCoord = aTexCoord;
 
     #ifdef VERTEX_COLOR
         vColor = aColor;
@@ -104,6 +107,9 @@ layout(location = 3) in vec4 aColor;
 
 uniform mat4 uMatMVP;
 
+uniform vec2 uTexCoordOffset;
+uniform vec2 uTexCoordScale;
+
 // === Outputs ===
 
 out vec2 vTexCoord;
@@ -116,7 +122,7 @@ out vec4 vColor;
 
 void main()
 {
-    vTexCoord = aTexCoord;
+    vTexCoord = uTexCoordOffset + aTexCoord * uTexCoordScale;
 
     #ifdef VERTEX_COLOR
         vColor = aColor;

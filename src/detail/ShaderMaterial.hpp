@@ -34,8 +34,8 @@
 
 #include <cstring>
 #include <cstdlib>
-#include <array>
 #include <utility>
+#include <array>
 
 namespace r3d {
 
@@ -204,61 +204,64 @@ private:
      * This structure holds all uniform variables and samplers related to lighting in the shader.
      */
     struct Light {
-        Sampler<GL_TEXTURE_2D> shadowMap;           /**< Sampler for the shadow map texture. */
-        Sampler<GL_TEXTURE_CUBE_MAP> shadowCubemap; /**< Sampler for the shadow cubemap texture. */
-        Uniform<Matrix, GL_FLOAT_MAT4> matMVP;      /**< MVP matrix for the light's transformation. */
-        Uniform<Color, GL_FLOAT_VEC3> color;        /**< Color of the light. */
-        Uniform<Vector3, GL_FLOAT_VEC3> position;   /**< Position of the light (for point lights). */
-        Uniform<Vector3, GL_FLOAT_VEC3> direction;  /**< Direction of the light (for directional lights). */
-        Uniform<float, GL_FLOAT> energy;            /**< Energy/intensity of the light. */
-        Uniform<float, GL_FLOAT> maxDistance;       /**< Maximum distance the light affects. */
-        Uniform<float, GL_FLOAT> attenuation;       /**< Attenuation factor for light falloff. */
-        Uniform<float, GL_FLOAT> innerCutOff;       /**< Inner cutoff for cone-shaped lights. */
-        Uniform<float, GL_FLOAT> outerCutOff;       /**< Outer cutoff for cone-shaped lights. */
-        Uniform<float, GL_FLOAT> shadowMapTxlSz;    /**< Texture size of the shadow map. */
-        Uniform<float, GL_FLOAT> shadowBias;        /**< Bias for shadow calculations. */
-        Uniform<int, GL_LOW_INT> type;              /**< Type of the light (e.g., point, directional). */
-        Uniform<bool, GL_BOOL> shadow;              /**< Whether the light casts shadows. */
-        Uniform<bool, GL_BOOL> enabled;             /**< Whether the light is enabled. */
+        Sampler<GL_TEXTURE_2D> shadowMap;               /**< Sampler for the shadow map texture. */
+        Sampler<GL_TEXTURE_CUBE_MAP> shadowCubemap;     /**< Sampler for the shadow cubemap texture. */
+        Uniform<Matrix, GL_FLOAT_MAT4> matMVP;          /**< MVP matrix for the light's transformation. */
+        Uniform<Color, GL_FLOAT_VEC3> color;            /**< Color of the light. */
+        Uniform<Vector3, GL_FLOAT_VEC3> position;       /**< Position of the light (for point lights). */
+        Uniform<Vector3, GL_FLOAT_VEC3> direction;      /**< Direction of the light (for directional lights). */
+        Uniform<float, GL_FLOAT> energy;                /**< Energy/intensity of the light. */
+        Uniform<float, GL_FLOAT> maxDistance;           /**< Maximum distance the light affects. */
+        Uniform<float, GL_FLOAT> attenuation;           /**< Attenuation factor for light falloff. */
+        Uniform<float, GL_FLOAT> innerCutOff;           /**< Inner cutoff for cone-shaped lights. */
+        Uniform<float, GL_FLOAT> outerCutOff;           /**< Outer cutoff for cone-shaped lights. */
+        Uniform<float, GL_FLOAT> shadowMapTxlSz;        /**< Texture size of the shadow map. */
+        Uniform<float, GL_FLOAT> shadowBias;            /**< Bias for shadow calculations. */
+        Uniform<int, GL_LOW_INT> type;                  /**< Type of the light (e.g., point, directional). */
+        Uniform<bool, GL_BOOL> shadow;                  /**< Whether the light casts shadows. */
+        Uniform<bool, GL_BOOL> enabled;                 /**< Whether the light is enabled. */
     };
 
 private:
-    R3D_MaterialShaderConfig mConfig;               /**< The material shader configuration. */
-    GLuint mShaderID;                               /**< The shader program ID. */
+    R3D_MaterialShaderConfig mConfig;                   /**< The material shader configuration. */
+    GLuint mShaderID;                                   /**< The shader program ID. */
 
-    std::array<Light, SHADER_LIGHT_COUNT> mLights;  /**< Array of light sources. */
+    std::array<Light, SHADER_LIGHT_COUNT> mLights;      /**< Array of light sources. */
 
-    Uniform<Matrix, GL_FLOAT_MAT4> mMatNormal;      /**< Normal matrix for transforming normals. */
-    Uniform<Matrix, GL_FLOAT_MAT4> mMatModel;       /**< Model matrix for object transformation. */
-    Uniform<Matrix, GL_FLOAT_MAT4> mMatMVP;         /**< MVP matrix for transforming vertices. */
+    Uniform<Matrix, GL_FLOAT_MAT4> mMatNormal;          /**< Normal matrix for transforming normals. */
+    Uniform<Matrix, GL_FLOAT_MAT4> mMatModel;           /**< Model matrix for object transformation. */
+    Uniform<Matrix, GL_FLOAT_MAT4> mMatMVP;             /**< MVP matrix for transforming vertices. */
 
-    Uniform<float, GL_FLOAT> mBloomHdrThreshold;    /**< Threshold for HDR bloom effect. */
-    Uniform<Color, GL_FLOAT_VEC3> mColAmbient;      /**< Ambient color of the scene. */
-    Uniform<Vector3, GL_FLOAT_VEC3> mViewPos;       /**< Position of the viewer (camera). */
+    Uniform<Vector2, GL_FLOAT_VEC2> mTexCoordOffset;    /**< Offsets texture coordinates for effects like scrolling or repositioning. */
+    Uniform<Vector2, GL_FLOAT_VEC2> mTexCoordScale;     /**< Scales texture coordinates to adjust texture size or tiling. */
 
-    Sampler<GL_TEXTURE_2D> mTexAlbedo;              /**< Albedo texture sampler. */
-    Uniform<Color, GL_FLOAT_VEC4> mColAlbedo;       /**< Albedo color. */
+    Uniform<float, GL_FLOAT> mBloomHdrThreshold;        /**< Threshold for HDR bloom effect. */
+    Uniform<Color, GL_FLOAT_VEC3> mColAmbient;          /**< Ambient color of the scene. */
+    Uniform<Vector3, GL_FLOAT_VEC3> mViewPos;           /**< Position of the viewer (camera). */
 
-    Sampler<GL_TEXTURE_2D> mTexMetalness;           /**< Metalness texture sampler. */
-    Uniform<float, GL_FLOAT> mValMetalness;         /**< Metalness value. */
+    Sampler<GL_TEXTURE_2D> mTexAlbedo;                  /**< Albedo texture sampler. */
+    Uniform<Color, GL_FLOAT_VEC4> mColAlbedo;           /**< Albedo color. */
 
-    Sampler<GL_TEXTURE_2D> mTexRoughness;           /**< Roughness texture sampler. */
-    Uniform<float, GL_FLOAT> mValRoughness;         /**< Roughness value. */
+    Sampler<GL_TEXTURE_2D> mTexMetalness;               /**< Metalness texture sampler. */
+    Uniform<float, GL_FLOAT> mValMetalness;             /**< Metalness value. */
 
-    Sampler<GL_TEXTURE_2D> mTexEmission;            /**< Emission texture sampler. */
-    Uniform<float, GL_FLOAT> mValEmissionEnergy;    /**< Emission energy. */
-    Uniform<Color, GL_FLOAT_VEC3> mColEmission;     /**< Emission color. */
+    Sampler<GL_TEXTURE_2D> mTexRoughness;               /**< Roughness texture sampler. */
+    Uniform<float, GL_FLOAT> mValRoughness;             /**< Roughness value. */
 
-    Sampler<GL_TEXTURE_2D> mTexNormal;              /**< Normal map texture sampler. */
+    Sampler<GL_TEXTURE_2D> mTexEmission;                /**< Emission texture sampler. */
+    Uniform<float, GL_FLOAT> mValEmissionEnergy;        /**< Emission energy. */
+    Uniform<Color, GL_FLOAT_VEC3> mColEmission;         /**< Emission color. */
 
-    Sampler<GL_TEXTURE_2D> mTexAO;                  /**< Ambient occlusion texture sampler. */
-    Uniform<float, GL_FLOAT> mValAOLightAffect;     /**< AO light affect value. */
+    Sampler<GL_TEXTURE_2D> mTexNormal;                  /**< Normal map texture sampler. */
 
-    Sampler<GL_TEXTURE_CUBE_MAP> mCubeIrradiance;   /**< Cube map for irradiance. */
-    Sampler<GL_TEXTURE_CUBE_MAP> mCubePrefilter;    /**< Cube map for prefiltered textures. */
-    Sampler<GL_TEXTURE_2D> mTexBrdfLUT;             /**< BRDF LUT texture sampler. */
-    Uniform<Vector4, GL_FLOAT_VEC4> mQuatSkybox;    /**< Skybox quaternion for environment mapping. */
-    Uniform<bool, GL_BOOL> mHasSkybox;              /**< Whether the skybox is enabled. */
+    Sampler<GL_TEXTURE_2D> mTexAO;                      /**< Ambient occlusion texture sampler. */
+    Uniform<float, GL_FLOAT> mValAOLightAffect;         /**< AO light affect value. */
+
+    Sampler<GL_TEXTURE_CUBE_MAP> mCubeIrradiance;       /**< Cube map for irradiance. */
+    Sampler<GL_TEXTURE_CUBE_MAP> mCubePrefilter;        /**< Cube map for prefiltered textures. */
+    Sampler<GL_TEXTURE_2D> mTexBrdfLUT;                 /**< BRDF LUT texture sampler. */
+    Uniform<Vector4, GL_FLOAT_VEC4> mQuatSkybox;        /**< Skybox quaternion for environment mapping. */
+    Uniform<bool, GL_BOOL> mHasSkybox;                  /**< Whether the skybox is enabled. */
 };
 
 
@@ -359,6 +362,9 @@ inline ShaderMaterial::ShaderMaterial(R3D_MaterialShaderConfig config)
     glUseProgram(mShaderID);
 
     mMatMVP = Uniform<Matrix, GL_FLOAT_MAT4>(mShaderID, "uMatMVP");
+
+    mTexCoordOffset = Uniform<Vector2, GL_FLOAT_VEC2>(mShaderID, "uTexCoordOffset");
+    mTexCoordScale = Uniform<Vector2, GL_FLOAT_VEC2>(mShaderID, "uTexCoordScale");
 
     mTexAlbedo = Sampler<GL_TEXTURE_2D>(mShaderID, "uTexAlbedo", textureSlot++);
     mColAlbedo = Uniform<Color, GL_FLOAT_VEC4>(mShaderID, "uColAlbedo");
@@ -567,6 +573,9 @@ inline void ShaderMaterial::setEnvironment(const R3D_Environment& env, const Vec
 
 inline void ShaderMaterial::setMaterial(const R3D_Material& material)
 {
+    mTexCoordOffset.set(material.uv.offset);
+    mTexCoordScale.set(material.uv.scale);
+
     mTexAlbedo.bind(material.albedo.texture.id);
     mColAlbedo.set(material.albedo.color);
 

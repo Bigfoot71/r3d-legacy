@@ -364,6 +364,11 @@ typedef struct {
         float lightAffect;      /**< Factor determining the light's impact on AO. Default: `0.0f`. */
     } ao;                       /**< Ambient occlusion properties of the material. */
 
+    struct {
+        Vector2 offset;         /**< UV offset for the material's texture coordinates. Default: `(0.0f, 0.0f)`. */
+        Vector2 scale;          /**< UV scale for the material's texture coordinates. Default: `(1.0f, 1.0f)`. */
+    } uv;                       /**< UV transformation properties for adjusting texture coordinates. */
+
     R3D_MaterialConfig config;  /**< Material configuration. Do not modify directly; use `R3D_UpdateMaterialConfig` instead. */
 } R3D_Material;
 
@@ -406,6 +411,30 @@ typedef struct {
     R3D_BillboardMode billboard;     /**< Indicates whether the model should be rendered as a billboard. */
     void *internal;                  /**< Internal data used by the rendering engine. Should not be modified directly. */
 } R3D_Model;
+
+/**
+ * @brief Represents a 3D sprite with billboard rendering and animation support.
+ * 
+ * This structure defines a 3D sprite, which by default is rendered as a billboard around the Y-axis. 
+ * The sprite supports frame-based animations and can be configured to use various billboard modes. 
+ * 
+ * @warning The shadow mode does not handle transparency. If shadows are enabled, the entire quad will be rendered in the shadow map, 
+ * potentially causing undesired visual artifacts for semi-transparent sprites.
+ */
+typedef struct {
+
+    R3D_Transform transform;        /**< The transformation (position, rotation, and scale) applied to the sprite. */
+    R3D_Material material;          /**< The material used for rendering the sprite, including its texture and shading properties. */
+
+    float currentFrame;             /**< The current animation frame, represented as a floating-point value to allow smooth interpolation. */
+    Vector2 frameSize;              /**< The size of a single animation frame, in texture coordinates (width and height). */
+    int xFrameCount;                /**< The number of frames along the horizontal (X) axis of the texture. */
+    int yFrameCount;                /**< The number of frames along the vertical (Y) axis of the texture. */
+
+    R3D_CastShadow shadow;          /**< The shadow-casting mode for the sprite. Determines whether and how the sprite casts shadows. */
+    R3D_BillboardMode billboard;    /**< The billboard mode for the sprite, specifying how it faces the camera. */
+
+} R3D_Sprite;
 
 /**
  * @brief Represents a keyframe in an interpolation curve.
@@ -708,6 +737,42 @@ void R3D_DrawModelEx(const R3D_Model* model, Vector3 position, float scale);
  * @warning Passing a `nullptr` as the `system` parameter will result in undefined behavior.
  */
 void R3D_DrawModelPro(const R3D_Model* model, Vector3 position, Vector3 rotationAxis, float rotationAngle, Vector3 scale);
+
+/**
+ * @brief Draws a sprite using its defined transformation.
+ * 
+ * This function renders the specified sprite using the transformation defined in its internal configuration. 
+ * No additional transformations (such as position, rotation, or scaling) are applied.
+ * 
+ * @param sprite A pointer to the `R3D_Sprite` to be drawn.
+ */
+void R3D_DrawSprite(const R3D_Sprite* sprite);
+
+/**
+ * @brief Draws a sprite at a specified position with uniform scaling.
+ * 
+ * This function renders the specified sprite at the given position and with a uniform size factor.
+ * The sprite's internal transformation is ignored.
+ * 
+ * @param sprite  A pointer to the `R3D_Sprite` to be drawn.
+ * @param position The position in 3D space where the sprite should be rendered.
+ * @param size     A uniform scaling factor to apply to the sprite.
+ */
+void R3D_DrawSpriteEx(const R3D_Sprite* sprite, Vector3 position, float size);
+
+/**
+ * @brief Draws a sprite with advanced transformation settings.
+ * 
+ * This function allows rendering a sprite at a specified position with custom rotation and scaling.
+ * The sprite's internal transformation is ignored.
+ * 
+ * @param sprite       A pointer to the `R3D_Sprite` to be drawn.
+ * @param position     The position in 3D space where the sprite should be rendered.
+ * @param rotationAxis The axis around which the sprite should be rotated.
+ * @param rotationAngle The angle of rotation (in degrees) around the specified axis.
+ * @param size         A `Vector2` specifying the size of the sprite in the X and Y dimensions.
+ */
+void R3D_DrawSpritePro(const R3D_Sprite* sprite, Vector3 position, Vector3 rotationAxis, float rotationAngle, Vector2 size);
 
 /**
  * @brief Renders the current state of a CPU-based particle system.
@@ -1932,6 +1997,75 @@ void R3D_UpdateModelAABB(R3D_Model* model, float extraMargin);
  * @param model A pointer to the `R3D_Model` object for which the tangents should be generated.
  */
 void R3D_GenTangents(R3D_Model* model);
+
+
+/* [Objects] - Sprite Functions */
+
+/**
+ * @brief Creates a sprite from a texture.
+ * 
+ * This function creates a `R3D_Sprite` using the provided texture. The texture will be used as the albedo of the sprite's material.
+ * 
+ * @warning The lifetime of the provided texture is managed by the caller.
+ * 
+ * @param texture The `Texture2D` to be used for the sprite.
+ * @param xFrameCount The number of frames in the horizontal direction.
+ * @param yFrameCount The number of frames in the vertical direction.
+ * 
+ * @return A `R3D_Sprite` object initialized with the given texture and frame configuration.
+ */
+R3D_Sprite R3D_CreateSprite(Texture2D texture, int xFrameCount, int yFrameCount);
+
+/**
+ * @brief Updates the animation of a sprite.
+ * 
+ * This function updates the current frame of the sprite's animation based on the provided speed. The animation frames are read from 
+ * right to left, advancing the cursor to the next row after completing a line.
+ * 
+ * @note The `speed` parameter can be calculated as the number of frames per second multiplied by `GetFrameTime()`.
+ * 
+ * @param sprite A pointer to the `R3D_Sprite` to update.
+ * @param speed The speed at which the animation progresses, in frames per second.
+ */
+void R3D_UpdateSprite(R3D_Sprite* sprite, float speed);
+
+/**
+ * @brief Updates the animation of a sprite with specified frame boundaries.
+ * 
+ * This function updates the current frame of the sprite's animation while restricting it between `firstFrame` and `lastFrame`. 
+ * This is useful for spritesheets containing multiple animations.
+ * 
+ * @note The frames are read from right to left, and the cursor moves to the next row after completing a line.
+ * @note The `speed` parameter can be calculated as the number of frames per second multiplied by `GetFrameTime()`.
+ * 
+ * @param sprite A pointer to the `R3D_Sprite` to update.
+ * @param firstFrame The first frame of the animation loop.
+ * @param lastFrame The last frame of the animation loop.
+ * @param speed The speed at which the animation progresses, in frames per second.
+ */
+void R3D_UpdateSpriteEx(R3D_Sprite* sprite, int firstFrame, int lastFrame, float speed);
+
+/**
+ * @brief Retrieves the current frame's texture coordinates for a sprite.
+ * 
+ * This function returns the `Vector2` representing the top-left corner of the current frame's texture coordinates.
+ * 
+ * @param sprite A pointer to the `R3D_Sprite` to query.
+ * 
+ * @return A `Vector2` containing the current frame's texture coordinates.
+ */
+Vector2 R3D_GetCurrentSpriteFrameCoord(const R3D_Sprite* sprite);
+
+/**
+ * @brief Retrieves the current frame's rectangle for a sprite.
+ * 
+ * This function returns a `Rectangle` representing the dimensions and position of the current frame within the texture.
+ * 
+ * @param sprite A pointer to the `R3D_Sprite` to query.
+ * 
+ * @return A `Rectangle` representing the current frame's position and size.
+ */
+static Rectangle R3D_GetCurrentSpriteFrameRect(const R3D_Sprite* sprite);
 
 
 /* [Objects] - Interpolation Curve Functions */

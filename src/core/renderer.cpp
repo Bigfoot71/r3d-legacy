@@ -105,6 +105,21 @@ void R3D_DrawModelPro(const R3D_Model* model, Vector3 position, Vector3 rotation
     gRenderer->drawModel(*model, position, rotationAxis, rotationAngle, scale);
 }
 
+void R3D_DrawSprite(const R3D_Sprite* sprite)
+{
+    gRenderer->drawSprite(*sprite, { }, { }, 0.0f, { 1.0f, 1.0f });
+}
+
+void R3D_DrawSpriteEx(const R3D_Sprite* sprite, Vector3 position, float size)
+{
+    gRenderer->drawSprite(*sprite, position, { }, 0.0f, { size, size });
+}
+
+void R3D_DrawSpritePro(const R3D_Sprite* sprite, Vector3 position, Vector3 rotationAxis, float rotationAngle, Vector2 size)
+{
+    gRenderer->drawSprite(*sprite, position, rotationAxis, rotationAngle, size);
+}
+
 void R3D_DrawParticleSystemCPU(R3D_ParticleSystemCPU* system)
 {
     gRenderer->drawParticleSystemCPU(*system);

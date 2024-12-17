@@ -70,7 +70,8 @@ namespace r3d {
 /**
  * @brief Stores a draw call for rendering in shadow maps.
  * 
- * This class encapsulates a draw call, which can either be a mesh or particle system, for rendering in shadow maps.
+ * This class encapsulates a draw call, which can either be a mesh, sprite, or particle system, for rendering in shadow maps.
+ * The draw call is evaluated and executed to render the object in the shadow map from the perspective of a light source.
  */
 class DrawCall_Shadow
 {
@@ -87,6 +88,19 @@ public:
     };
 
     /**
+     * @struct Sprite
+     * @brief Structure representing a sprite to be rendered.
+     * 
+     * This structure contains the sprite and its associated transformation matrix for rendering in shadow maps.
+     * The sprite is treated similarly to a mesh in terms of transformation, but it may also include special handling 
+     * for billboard rendering and animation.
+     */
+    struct Sprite {
+        const R3D_Sprite *sprite;   ///< Pointer to the sprite to be rendered.
+        const Matrix transform;     ///< Transformation matrix for the sprite.
+    };
+
+    /**
      * @struct ParticlesCPU
      * @brief Structure representing a particle system to be rendered.
      * 
@@ -99,19 +113,41 @@ public:
 public:
     /**
      * @brief Constructs a draw call for a mesh.
+     * 
+     * This constructor creates a draw call for rendering a mesh in the shadow map.
+     * 
      * @param mesh The mesh to be rendered.
      * @param transform The transformation matrix for the mesh.
      */
     DrawCall_Shadow(const Mesh* mesh, const Matrix& transform);
 
     /**
+     * @brief Constructs a draw call for a sprite.
+     * 
+     * This constructor creates a draw call for rendering a sprite in the shadow map.
+     * The sprite's transformations (position, rotation, scale) will be applied, and its properties will be taken into account 
+     * when generating the shadow.
+     * 
+     * @param sprite The sprite to be rendered.
+     * @param transform The transformation matrix for the sprite.
+     */
+    DrawCall_Shadow(const R3D_Sprite* sprite, const Matrix& transform);
+
+    /**
      * @brief Constructs a draw call for a particle system.
+     * 
+     * This constructor creates a draw call for rendering a particle system in the shadow map.
+     * 
      * @param system The particle system to be rendered.
      */
     DrawCall_Shadow(const R3D_ParticleSystemCPU* system);
 
     /**
-     * @brief Draws the object (either mesh or particle system) for shadow mapping.
+     * @brief Draws the object (either mesh, sprite, or particle system) for shadow mapping.
+     * 
+     * This method determines which type of object to render (mesh, sprite, or particle system) and calls the appropriate 
+     * draw function for shadow mapping.
+     * 
      * @param light The light source used for shadow mapping.
      */
     void draw(const Light& light) const;
@@ -119,24 +155,43 @@ public:
 private:
     /**
      * @brief Draws the mesh for shadow mapping.
+     * 
+     * This method handles rendering the mesh in the shadow map from the perspective of the specified light source.
+     * 
      * @param light The light source used for shadow mapping.
      */
     void drawMesh(const Light& light) const;
 
     /**
+     * @brief Draws the sprite for shadow mapping.
+     * 
+     * This method handles rendering the sprite in the shadow map. The sprite will be treated similarly to a mesh,
+     * with its transformation applied. Special consideration is given to the sprite's properties, such as its billboard mode 
+     * and animation, for accurate shadow rendering.
+     * 
+     * @param light The light source used for shadow mapping.
+     */
+    void drawSprite(const Light& light) const;
+
+    /**
      * @brief Draws the particle system for shadow mapping.
+     * 
+     * This method handles rendering the particle system in the shadow map. Each particle in the system will be rendered 
+     * in the shadow map with appropriate transformations and lighting interactions.
+     * 
      * @param light The light source used for shadow mapping.
      */
     void drawParticlesCPU(const Light& light) const;
 
 private:
-    std::variant<Surface, ParticlesCPU> mCall; ///< The variant type that holds either a surface or a particle system for rendering.
+    std::variant<Surface, Sprite, ParticlesCPU> mCall; ///< The variant type that holds either a surface (mesh), sprite, or particle system for rendering.
 };
 
 /**
  * @brief Stores a draw call for rendering in the main scene.
  * 
- * This class encapsulates a draw call, which can either be a mesh or particle system, for rendering in the main scene with light and material properties.
+ * This class encapsulates a draw call, which can either be a mesh, sprite, or particle system, for rendering in the main scene.
+ * It includes the necessary information for applying light influences, material properties, and transformations to render objects in the scene.
  */
 class DrawCall_Scene
 {
@@ -146,14 +201,28 @@ public:
      * @brief Structure representing a surface to be rendered in the scene.
      * 
      * This structure contains the mesh, material, transformation matrix, and light influences for rendering.
+     * It represents a surface (such as a 3D model) that is drawn with a specified material and influenced by the scene's lights.
      */
     struct Surface {
         struct {
             const Mesh *mesh;           ///< Pointer to the mesh to be rendered.
             R3D_Material material;      ///< Material copy for rendering the same mesh with different parameters.
         } surface;                      ///< Surface information for the draw call.
-        Matrix transform;               ///< Transformation matrix for the draw call.
         ShaderLightArray lights;        ///< Array of light pointers influencing this draw call.
+        Matrix transform;               ///< Transformation matrix for the draw call.
+    };
+
+    /**
+     * @struct Sprite
+     * @brief Structure representing a sprite to be rendered in the scene.
+     * 
+     * This structure contains the sprite, material properties, transformation matrix, and light influences for rendering.
+     * Sprites are rendered as 2D objects in the 3D scene, and may include special features such as animation or billboard behavior.
+     */
+    struct Sprite {
+        const R3D_Sprite *sprite;       ///< Pointer to the sprite to be rendered.
+        ShaderLightArray lights;        ///< Array of light pointers influencing the sprite.
+        Matrix transform;               ///< Transformation matrix for the sprite.
     };
 
     /**
@@ -161,6 +230,7 @@ public:
      * @brief Structure representing a particle system to be rendered in the scene.
      * 
      * This structure contains the particle system and light influences for rendering.
+     * Particle systems allow for rendering dynamic, animated objects that can interact with lights in the scene.
      */
     struct ParticlesCPU {
         R3D_ParticleSystemCPU *system;   ///< Pointer to the particle system to be rendered.
@@ -170,14 +240,34 @@ public:
 public:
     /**
      * @brief Constructs a draw call for a surface to be rendered in the scene.
-     * @param surface The surface to be rendered.
+     * 
+     * This constructor creates a draw call for rendering a mesh (surface) in the scene with the provided material, transformation, 
+     * and light influences.
+     * 
+     * @param surface The surface (mesh) to be rendered.
      * @param transform The transformation matrix for the surface.
      * @param lights The array of lights influencing this draw call.
      */
     DrawCall_Scene(const R3D_Surface& surface, const Matrix& transform, const ShaderLightArray& lights);
 
     /**
+     * @brief Constructs a draw call for a sprite to be rendered in the scene.
+     * 
+     * This constructor creates a draw call for rendering a sprite in the scene. The sprite will be transformed and affected 
+     * by the provided lights. Special rendering properties, such as animation or billboard behavior, are handled.
+     * 
+     * @param sprite The sprite to be rendered.
+     * @param transform The transformation matrix for the sprite.
+     * @param lights The array of lights influencing the sprite.
+     */
+    DrawCall_Scene(const R3D_Sprite* sprite, const Matrix& transform, const ShaderLightArray& lights);
+
+    /**
      * @brief Constructs a draw call for a particle system to be rendered in the scene.
+     * 
+     * This constructor creates a draw call for rendering a particle system in the scene, with the provided light influences 
+     * that will affect how the particles are lit.
+     * 
      * @param system The particle system to be rendered.
      * @param lights The array of lights influencing the particle system.
      */
@@ -185,6 +275,10 @@ public:
 
     /**
      * @brief Executes the draw call using the provided shader material.
+     * 
+     * This method performs the actual rendering of the object (mesh, sprite, or particle system) in the scene using the provided 
+     * shader material, applying light and material properties to produce the final visual result.
+     * 
      * @param shader The shader material to use for rendering.
      */
     void draw(ShaderMaterial& shader) const;
@@ -192,30 +286,48 @@ public:
     /**
      * @brief Retrieves the transformation matrix of the surface, if applicable.
      *
-     * This method returns a pointer to the transformation matrix of the surface associated
-     * with the draw call. If the draw call represents a particle system or no surface is
-     * associated, the method returns `nullptr`.
+     * This method returns the transformation matrix of the object represented by the draw call
+     * if it has one, otherwise the function will return `nullptr` if the underlying object does not
+     * have a direct transformation, as is the case for particle systems, for example.
      *
-     * @return A pointer to the transformation matrix if the draw call represents a surface; 
-     *         otherwise, `nullptr`.
+     * @return A pointer to the transformation matrix if the draw call object has one, otherwise, `nullptr`.
      */
-    const Matrix* surfaceTransform() const;
+    const Matrix* getTransform() const;
 
 private:
     /**
      * @brief Draws the mesh for this draw call using the shader material.
+     * 
+     * This method handles the rendering of the mesh in the scene, applying the material properties, transformation, 
+     * and light influences during the drawing process.
+     * 
      * @param shader The shader material to use for rendering the mesh.
      */
     void drawMesh(ShaderMaterial& shader) const;
 
     /**
+     * @brief Draws the sprite for this draw call using the shader material.
+     * 
+     * This method handles the rendering of the sprite in the scene. The sprite's transformation, material properties, 
+     * and light influences will be applied during the drawing process. Special rendering features such as animation 
+     * or billboard behavior are also taken into account.
+     * 
+     * @param shader The shader material to use for rendering the sprite.
+     */
+    void drawSprite(ShaderMaterial& shader) const;
+
+    /**
      * @brief Draws the particle system for this draw call using the shader material.
+     * 
+     * This method handles the rendering of the particle system in the scene, applying the material properties and light 
+     * influences to render the dynamic particles.
+     * 
      * @param shader The shader material to use for rendering the particle system.
      */
     void drawParticlesCPU(ShaderMaterial& shader) const;
 
 private:
-    std::variant<Surface, ParticlesCPU> mCall; ///< The variant type that holds either a surface or a particle system for rendering in the scene.
+    std::variant<Surface, Sprite, ParticlesCPU> mCall; ///< The variant type that holds either a surface (mesh), sprite, or particle system for rendering in the scene.
 };
 
 /**
@@ -332,6 +444,22 @@ public:
      * @param scale The scale of the model.
      */
     void drawModel(const R3D_Model& model, const Vector3& position, const Vector3& rotationAxis, float rotationAngle, const Vector3& scale);
+
+    /**
+     * @brief Evaluates and queues a sprite for rendering based on visibility and rendering contexts.
+     * 
+     * This function performs various tests to determine if the given sprite should be rendered. It applies frustum culling 
+     * to check if the sprite is visible within the camera's frustum. Additionally, the sprite is queued for rendering in the 
+     * appropriate context, including the main scene or shadow maps. The sprite is rendered using the specified position, rotation, 
+     * and scale parameters, and the provided size is used to scale the sprite appropriately.
+     * 
+     * @param sprite The sprite to evaluate and queue for rendering.
+     * @param position The world-space position of the sprite.
+     * @param rotationAxis The axis around which the sprite should be rotated.
+     * @param rotationAngle The angle of rotation, in degrees, around the specified rotation axis.
+     * @param size The size of the sprite in world-space units (scaling the sprite based on this value).
+     */
+    void drawSprite(const R3D_Sprite& sprite, const Vector3& position, const Vector3& rotationAxis, float rotationAngle, const Vector2& size);
 
     /**
      * @brief Renders the given particle system in the scene.
@@ -702,7 +830,7 @@ inline void Renderer::drawModel(const R3D_Model& model, const Vector3& position,
         Matrix billboardRotation = getBillboardRotationMatrix(
             model.billboard, modelPosition, mCamera.position
         );
-        transform = MatrixMultiply(billboardRotation, transform);
+        transform = MatrixMultiply(transform, billboardRotation);
     }
 
     // Retrieves the model's bounding box transformed according to the previously obtained transformation matrix.
@@ -800,6 +928,125 @@ inline void Renderer::drawModel(const R3D_Model& model, const Vector3& position,
                 DrawCall_Scene(surface, transform, lightsWhichShouldIlluminate)
             );
         }
+    }
+}
+
+inline void Renderer::drawSprite(const R3D_Sprite& sprite, const Vector3& position, const Vector3& rotationAxis, float rotationAngle, const Vector2& size)
+{
+    // Computes the sprite's transformation matrix using the provided parameters,
+    // the transformation assigned to the sprite, any parent transformations if present,
+    // the transformation specified via rlgl, and also retrieves the sprite's actual global position.
+
+    Matrix transform = MatrixMultiply(
+        MatrixMultiply(
+            MatrixScale(size.x * 0.5f, size.y * 0.5f, 1.0f),
+            MatrixRotate(rotationAxis, rotationAngle * DEG2RAD)
+        ),
+        MatrixTranslate(position.x, position.y, position.z)
+    );
+
+    transform = MatrixMultiply(transform, R3D_TransformToGlobal(&sprite.transform));
+    transform = MatrixMultiply(transform, rlGetMatrixTransform());
+
+    const Vector3 centerPosition = getMatrixTrasnlation(transform);
+
+    if (sprite.billboard != R3D_BILLBOARD_DISABLED) {
+        Matrix billboardRotation = getBillboardRotationMatrix(
+            sprite.billboard, centerPosition, mCamera.position
+        );
+        transform = MatrixMultiply(transform, billboardRotation);
+    }
+
+    // Retrieves the sprite's bounding box transformed according to the previously obtained transformation matrix.
+
+    BoundingBox globalAABB = {
+        { -1.0f, -1.0f, -1.0f },
+        { 1.0f, 1.0f, 1.0f }
+    };
+    globalAABB.min = Vector3Transform(globalAABB.min, transform);
+    globalAABB.max = Vector3Transform(globalAABB.max, transform);
+
+    // Performs a bounding box test for the sprite against the camera's frustum if necessary
+    // to determine if the object should be rendered in the visible scene. This feature can be
+    // disabled using the initialization flag 'R3D_FLAG_NO_FRUSTUM_CULLING'.
+
+    bool drawSurfaceScene = true;
+    if (!(flags & R3D_FLAG_NO_FRUSTUM_CULLING || sprite.shadow == R3D_CAST_SHADOW_ONLY)) {
+        drawSurfaceScene = mFrustumCamera.aabbIn(globalAABB);
+    }
+
+    // Determines which lights will interact with the sprite.
+    // This part checks which lights should cast shadows onto the sprite
+    // and also associates the lights with the draw call if the sprite is to be rendered in the scene.
+
+    ShaderLightArray lightsWhichShouldIlluminate{};
+    int lightsWhichShouldIlluminateCount = 0;
+
+    for (const auto& [id, light] : mLights) {
+
+        if (!light.enabled) continue;
+
+        // Here, we use a rather naive approach. If the light is not directional—
+        // for instance, it does not simulate the sun—then we check whether the squared 
+        // distance between the origin of the sprite and the light exceeds the maximum range 
+        // of the light's effective field. If it does, we can safely omit this light source for the sprite.
+
+        // Using the squared distance is faster to compute and provides a certain margin, 
+        // making it acceptable in this context.
+
+        const float lightMaxDistSqr = light.maxDistance * light.maxDistance;
+        if (light.type != R3D_DIRLIGHT && Vector3DistanceSqr(centerPosition, light.position) > lightMaxDistSqr) {
+            continue;
+        }
+
+        // Here we add:
+        //   - 1: The surfaces to the shadow batch for the light
+        //   - 2: The light to the surface draw calls for the scene rendering
+
+        auto& batch = mShadowBatches.getBatch(id);
+
+        switch (light.type) {
+            case R3D_DIRLIGHT: {
+                if (light.frustum.aabbIn(globalAABB)) {
+                    if (sprite.shadow != R3D_CAST_OFF && light.shadow) {
+                        batch.push_back(DrawCall_Shadow(&sprite, transform));
+                    }
+                    if (drawSurfaceScene && lightsWhichShouldIlluminateCount < SHADER_LIGHT_COUNT) {
+                        lightsWhichShouldIlluminate[lightsWhichShouldIlluminateCount] = &light;
+                        lightsWhichShouldIlluminateCount++;
+                    }
+                }
+            } break;
+            case R3D_SPOTLIGHT: {
+                if (light.frustum.aabbIn(globalAABB)) {
+                    if (sprite.shadow != R3D_CAST_OFF && light.shadow) {
+                        batch.push_back(DrawCall_Shadow(&sprite, transform));
+                    }
+                    if (drawSurfaceScene && lightsWhichShouldIlluminateCount < SHADER_LIGHT_COUNT) {
+                        lightsWhichShouldIlluminate[lightsWhichShouldIlluminateCount] = &light;
+                        lightsWhichShouldIlluminateCount++;
+                    }
+                }
+            } break;
+            case R3D_OMNILIGHT: {
+                // If we have reached this point, it means that the sprite is within the maximum influence distance of the omni light. 
+                // Therefore, we don't need to perform a frustum test since it illuminates in all directions.
+                if (sprite.shadow != R3D_CAST_OFF && light.shadow) {
+                    batch.push_back(DrawCall_Shadow(&sprite, transform));
+                }
+                if (drawSurfaceScene && lightsWhichShouldIlluminateCount < SHADER_LIGHT_COUNT) {
+                    lightsWhichShouldIlluminate[lightsWhichShouldIlluminateCount] = &light;
+                    lightsWhichShouldIlluminateCount++;
+                }
+            } break;
+        }
+    }
+
+    if (drawSurfaceScene) {
+        mSceneBatches.pushDrawCall(
+            sprite.material.config,
+            DrawCall_Scene(&sprite, transform, lightsWhichShouldIlluminate)
+        );
     }
 }
 
@@ -971,24 +1218,24 @@ inline void Renderer::present()
         case R3D_DEPTH_SORT_FAR_TO_NEAR: {
             for (auto& [_, batch] : mSceneBatches) {
                 std::sort(batch.begin(), batch.end(), [camPos](const DrawCall_Scene& a, const DrawCall_Scene& b) {
-                    if (a.surfaceTransform() && b.surfaceTransform()) {
-                        float distanceA = Vector3DistanceSqr(camPos, getMatrixTrasnlation(*a.surfaceTransform()));
-                        float distanceB = Vector3DistanceSqr(camPos, getMatrixTrasnlation(*b.surfaceTransform()));
+                    if (a.getTransform() && b.getTransform()) {
+                        float distanceA = Vector3DistanceSqr(camPos, getMatrixTrasnlation(*a.getTransform()));
+                        float distanceB = Vector3DistanceSqr(camPos, getMatrixTrasnlation(*b.getTransform()));
                         return distanceA > distanceB;
                     }
-                    return a.surfaceTransform() != nullptr;
+                    return a.getTransform() != nullptr;
                 });
             }
         } break;
         case R3D_DEPTH_SORT_NEAR_TO_FAR: {
             for (auto& [_, batch] : mSceneBatches) {
                 std::sort(batch.begin(), batch.end(), [camPos](const DrawCall_Scene& a, const DrawCall_Scene& b) {
-                    if (a.surfaceTransform() && b.surfaceTransform()) {
-                        float distanceA = Vector3DistanceSqr(camPos, getMatrixTrasnlation(*a.surfaceTransform()));
-                        float distanceB = Vector3DistanceSqr(camPos, getMatrixTrasnlation(*b.surfaceTransform()));
+                    if (a.getTransform() && b.getTransform()) {
+                        float distanceA = Vector3DistanceSqr(camPos, getMatrixTrasnlation(*a.getTransform()));
+                        float distanceB = Vector3DistanceSqr(camPos, getMatrixTrasnlation(*b.getTransform()));
                         return distanceA < distanceB;
                     }
-                    return a.surfaceTransform() != nullptr;
+                    return a.getTransform() != nullptr;
                 });
             }
         } break;
@@ -1350,7 +1597,7 @@ inline void Renderer::drawMeshShadow(const Light& light, const Mesh& mesh, const
         rlEnableVertexBuffer(mesh.vboId[0]);
         rlSetVertexAttribute(RL_DEFAULT_SHADER_ATTRIB_LOCATION_POSITION, 3, RL_FLOAT, 0, 0, 0);
         rlEnableVertexAttribute(RL_DEFAULT_SHADER_ATTRIB_LOCATION_POSITION);
-        if (mesh.indices != NULL) {
+        if (mesh.vboId[RL_DEFAULT_SHADER_ATTRIB_LOCATION_INDICES] > 0) {
             rlEnableVertexBufferElement(mesh.vboId[6]);
         }
     }
@@ -1373,8 +1620,11 @@ inline void Renderer::drawMeshShadow(const Light& light, const Mesh& mesh, const
             rlSetUniformMatrix(mShaderDepth.locs[SHADER_LOC_MATRIX_MVP], matMVP);
         }
 
-        if (mesh.indices == NULL) rlDrawVertexArray(0, mesh.vertexCount);
-        else rlDrawVertexArrayElements(0, 3 * mesh.triangleCount, 0);
+        if (mesh.vboId[RL_DEFAULT_SHADER_ATTRIB_LOCATION_INDICES] == 0) {
+            rlDrawVertexArray(0, mesh.vertexCount);
+        } else {
+            rlDrawVertexArrayElements(0, 3 * mesh.triangleCount, 0);
+        }
     }
 
     rlDisableVertexArray();
@@ -1450,7 +1700,7 @@ inline void Renderer::drawMeshScene(const Mesh& mesh, const Matrix& transform, S
         //    rlEnableVertexAttribute(material.shader.locs[SHADER_LOC_VERTEX_BONEWEIGHTS]);
         //}
 
-        if (mesh.indices != NULL) {
+        if (mesh.vboId[RL_DEFAULT_SHADER_ATTRIB_LOCATION_INDICES] > 0) {
             rlEnableVertexBufferElement(mesh.vboId[RL_DEFAULT_SHADER_ATTRIB_LOCATION_INDICES]);
         }
     }
@@ -1465,8 +1715,11 @@ inline void Renderer::drawMeshScene(const Mesh& mesh, const Matrix& transform, S
             glViewport(eye*rlGetFramebufferWidth()/2, 0, rlGetFramebufferWidth()/2, rlGetFramebufferHeight());
             shader.setMatMVP(MatrixMultiply(MatrixMultiply(matModelView, rlGetMatrixViewOffsetStereo(eye)), rlGetMatrixProjectionStereo(eye)));
         }
-        if (mesh.indices == NULL) rlDrawVertexArray(0, mesh.vertexCount);
-        else rlDrawVertexArrayElements(0, 3 * mesh.triangleCount, 0);
+        if (mesh.vboId[RL_DEFAULT_SHADER_ATTRIB_LOCATION_INDICES] == 0) {
+            rlDrawVertexArray(0, mesh.vertexCount);
+        } else {
+            rlDrawVertexArrayElements(0, 3 * mesh.triangleCount, 0);
+        }
     }
 
     // Disable all possible vertex array objects (or VBOs)
@@ -1486,6 +1739,10 @@ inline DrawCall_Shadow::DrawCall_Shadow(const Mesh* mesh, const Matrix& transfor
     : mCall(Surface { mesh, transform })
 { }
 
+inline DrawCall_Shadow::DrawCall_Shadow(const R3D_Sprite* sprite, const Matrix& transform)
+    : mCall(Sprite { sprite, transform })
+{ }
+
 inline DrawCall_Shadow::DrawCall_Shadow(const R3D_ParticleSystemCPU* system)
     : mCall(ParticlesCPU { system })
 { }
@@ -1494,7 +1751,8 @@ inline void DrawCall_Shadow::draw(const Light& light) const
 {
     switch (mCall.index()) {
         case 0: drawMesh(light); break;
-        case 1: drawParticlesCPU(light); break;
+        case 1: drawSprite(light); break;
+        case 2: drawParticlesCPU(light); break;
     }
 }
 
@@ -1504,9 +1762,28 @@ inline void DrawCall_Shadow::drawMesh(const Light& light) const
     gRenderer->drawMeshShadow(light, *call.mesh, call.transform);
 }
 
-inline void DrawCall_Shadow::drawParticlesCPU(const Light& light) const
+inline void DrawCall_Shadow::drawSprite(const Light& light) const
 {
     const auto& call = std::get<1>(mCall);
+
+    unsigned int vbo[9]{};
+    vbo[RL_DEFAULT_SHADER_ATTRIB_LOCATION_POSITION] = gRenderer->mQuad.vbo();
+    vbo[RL_DEFAULT_SHADER_ATTRIB_LOCATION_TEXCOORD] = gRenderer->mQuad.vbo();
+    vbo[RL_DEFAULT_SHADER_ATTRIB_LOCATION_NORMAL] = gRenderer->mQuad.vbo();
+    vbo[RL_DEFAULT_SHADER_ATTRIB_LOCATION_INDICES] = gRenderer->mQuad.ebo();
+
+    Mesh mesh {
+        .triangleCount = 2,
+        .vaoId = gRenderer->mQuad.vao(),
+        .vboId = vbo
+    };
+
+    gRenderer->drawMeshShadow(light, mesh, call.transform);
+}
+
+inline void DrawCall_Shadow::drawParticlesCPU(const Light& light) const
+{
+    const auto& call = std::get<2>(mCall);
     for (int i = 0; i < call.system->particleCount; i++) {
         const R3D_Particle& particle = call.system->particles[i];
         Matrix transform = MatrixMultiply(
@@ -1527,7 +1804,11 @@ inline void DrawCall_Shadow::drawParticlesCPU(const Light& light) const
 /* DrawCall_Scene implementation */
 
 inline DrawCall_Scene::DrawCall_Scene(const R3D_Surface& surface, const Matrix& transform, const ShaderLightArray& lights)
-    : mCall(Surface { &surface.mesh, surface.material, transform, lights })
+    : mCall(Surface { &surface.mesh, surface.material, lights, transform })
+{ }
+
+inline DrawCall_Scene::DrawCall_Scene(const R3D_Sprite* sprite, const Matrix& transform, const ShaderLightArray& lights)
+    : mCall(Sprite { sprite, lights, transform })
 { }
 
 inline DrawCall_Scene::DrawCall_Scene(R3D_ParticleSystemCPU* system, const ShaderLightArray& lights)
@@ -1538,13 +1819,16 @@ inline void DrawCall_Scene::draw(ShaderMaterial& shader) const
 {
     switch (mCall.index()) {
         case 0: drawMesh(shader); break;
-        case 1: drawParticlesCPU(shader); break;
+        case 1: drawSprite(shader); break;
+        case 2: drawParticlesCPU(shader); break;
     }
 }
 
-inline const Matrix* DrawCall_Scene::surfaceTransform() const {
-    if (mCall.index() == 0) {
-        return &std::get<0>(mCall).transform;
+inline const Matrix* DrawCall_Scene::getTransform() const {
+    switch (mCall.index()) {
+        case 0: return &std::get<0>(mCall).transform;
+        case 1: return &std::get<1>(mCall).transform;
+        default: break;
     }
     return nullptr;
 }
@@ -1560,9 +1844,32 @@ inline void DrawCall_Scene::drawMesh(ShaderMaterial& shader) const
     gRenderer->drawMeshScene(*call.surface.mesh, call.transform, shader, call.surface.material.config);
 }
 
+inline void DrawCall_Scene::drawSprite(ShaderMaterial& shader) const
+{
+    const auto& call = std::get<1>(mCall);
+
+    shader.setMaterial(call.sprite->material);
+    shader.setMatModel(call.transform);
+    shader.setLights(call.lights);
+
+    unsigned int vbo[9]{};
+    vbo[RL_DEFAULT_SHADER_ATTRIB_LOCATION_POSITION] = gRenderer->mQuad.vbo();
+    vbo[RL_DEFAULT_SHADER_ATTRIB_LOCATION_TEXCOORD] = gRenderer->mQuad.vbo();
+    vbo[RL_DEFAULT_SHADER_ATTRIB_LOCATION_NORMAL] = gRenderer->mQuad.vbo();
+    vbo[RL_DEFAULT_SHADER_ATTRIB_LOCATION_INDICES] = gRenderer->mQuad.ebo();
+
+    Mesh mesh {
+        .triangleCount = 2,
+        .vaoId = gRenderer->mQuad.vao(),
+        .vboId = vbo
+    };
+
+    gRenderer->drawMeshScene(mesh, call.transform, shader, call.sprite->material.config);
+}
+
 inline void DrawCall_Scene::drawParticlesCPU(ShaderMaterial& shader) const
 {
-    auto& call = std::get<1>(mCall);
+    auto& call = std::get<2>(mCall);
 
     Color baseColor = call.system->surface.material.albedo.color;
     const Vector3& camPos = gRenderer->mCamera.position;
@@ -1590,7 +1897,7 @@ inline void DrawCall_Scene::drawParticlesCPU(ShaderMaterial& shader) const
             Matrix billboardRotation = getBillboardRotationMatrix(
                 call.system->billboard, modelPos, gRenderer->mCamera.position
             );
-            transform = MatrixMultiply(billboardRotation, transform);
+            transform = MatrixMultiply(transform, billboardRotation);
         }
 
         call.system->surface.material.albedo.color = (Color) {

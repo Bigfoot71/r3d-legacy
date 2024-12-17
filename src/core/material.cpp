@@ -20,6 +20,7 @@
 #include "r3d.h"
 
 #include "./renderer.hpp"
+#include "raylib.h"
 
 R3D_MaterialConfig R3D_CreateMaterialConfig(R3D_DiffuseMode diffuse, R3D_SpecularMode specular,
                                             R3D_BlendMode blendMode, R3D_CullMode cullMode,
@@ -68,6 +69,10 @@ R3D_Material R3D_CreateMaterial(R3D_MaterialConfig config)
         .ao {
             .texture = *R3D_GetDefaultTextureWhite(),
             .lightAffect = 0.0f
+        },
+        .uv {
+            .offset = Vector2 { 0.0f, 0.0f },
+            .scale = Vector2 { 1.0f, 1.0f }
         },
         .config = config
     };
