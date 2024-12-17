@@ -52,7 +52,6 @@
 #include <algorithm>
 #include <cstdint>
 #include <variant>
-#include <vector>
 #include <cstdio>
 #include <cfloat>
 #include <memory>
@@ -174,8 +173,8 @@ public:
      * @brief Structure representing a particle system to be rendered in the scene.
      */
     struct ParticlesCPU {
-        R3D_ParticleSystemCPU *system;   ///< Pointer to the particle system to be rendered.
-        ShaderLightArray lights;         ///< Array of light pointers influencing the particle system.
+        const R3D_ParticleSystemCPU *system;    ///< Pointer to the particle system to be rendered.
+        ShaderLightArray lights;                ///< Array of light pointers influencing the particle system.
     };
 
 public:
@@ -192,7 +191,7 @@ public:
     /**
      * @brief Constructs a draw call for a particle system to be rendered in the scene.
      */
-    DrawCall_Scene(R3D_ParticleSystemCPU* system, const ShaderLightArray& lights);
+    DrawCall_Scene(const R3D_ParticleSystemCPU* system, const ShaderLightArray& lights);
 
     /**
      * @brief Executes the draw call using the provided shader material.
@@ -326,53 +325,52 @@ public:
     void setCamera(const Camera3D& camera);
 
     /**
-     * @brief Evaluates and queues a model for rendering based on visibility and rendering contexts.
-     * 
-     * This method performs various tests to determine if the given model should be rendered. It applies frustum culling 
-     * to check if the model is visible within the camera's frustum, verifies if the model needs to be rendered in shadow maps, 
-     * and includes the model in the appropriate rendering batches for contexts such as the main scene or shadow maps.
-     * 
-     * @param model The model to evaluate and queue for rendering.
-     * @param position The world-space position of the model.
-     * @param rotationAxis The axis around which the model is rotated.
-     * @param rotationAngle The angle of rotation, in degrees.
-     * @param scale The scale of the model.
+     * @brief Computes the global transformation matrix for an object.
+     * @return The computed global transformation matrix.
      */
-    void addModelToRenderQueue(const R3D_Model& model, const Vector3& position, const Vector3& rotationAxis, float rotationAngle, const Vector3& scale);
+    Matrix getGlobalTrasformMatrix(R3D_BillboardMode billboard, const R3D_Transform& transform,
+                                   const Vector3& position, const Vector3& rotationAxis,
+                                   float rotationAngle, const Vector3& scale);
 
     /**
-     * @brief Evaluates and queues a sprite for rendering based on visibility and rendering contexts.
-     * 
-     * This function performs various tests to determine if the given sprite should be rendered. It applies frustum culling 
-     * to check if the sprite is visible within the camera's frustum. Additionally, the sprite is queued for rendering in the 
-     * appropriate context, including the main scene or shadow maps. The sprite is rendered using the specified position, rotation, 
-     * and scale parameters, and the provided size is used to scale the sprite appropriately.
-     * 
-     * @param sprite The sprite to evaluate and queue for rendering.
-     * @param position The world-space position of the sprite.
-     * @param rotationAxis The axis around which the sprite should be rotated.
-     * @param rotationAngle The angle of rotation, in degrees, around the specified rotation axis.
-     * @param size The size of the sprite in world-space units (scaling the sprite based on this value).
+     * @brief Determines if an object is visible within the current view frustum.
+     * @return true if the object is visible; false otherwise.
      */
-    void addSpriteToRenderQueue(const R3D_Sprite& sprite, const Vector3& position, const Vector3& rotationAxis, float rotationAngle, const Vector2& size);
+    template <typename Object>
+    bool isObjectVisible(const Object& object, const BoundingBox& globalAABB);
 
     /**
-     * @brief Renders the given particle system in the scene.
-     * 
-     * This method evaluates and renders the specified particle system in the scene. It processes the system's visibility, 
-     * handles the required transformations, and queues the appropriate draw calls for rendering. This function is typically 
-     * called to render particle systems after their properties (such as position, velocity, and material) have been updated.
-     * 
-     * @param system The particle system to be rendered.
+     * @brief Prepares lighting and shadow mapping data for a given object.
      */
-    void addParticleSysCpuToRenderQueue(R3D_ParticleSystemCPU& system);
+    template <typename Object>
+    void setupLightsAndShadows(const Object& object, const BoundingBox& globalAABB,
+                               const Matrix& globalTransform, ShaderLightArray* lightArray);
 
     /**
-     * @brief Executes the rendering of all queued surfaces and presents the final frame to the display.
+     * @brief Adds an object and its associated lighting data to the rendering batch.
+     */
+    template <typename Object>
+    void addObjectToSceneBatch(const Object& object, const Matrix& globalTransform, const ShaderLightArray& lightArray);
+
+    /**
+     * @brief Executes the shadow map rendering pass.
+     */
+    void renderShadowPass();
+
+    /**
+     * @brief Executes the main scene rendering pass.
+     */
+    void renderScenePass();
+
+    /**
+     * @brief Executes the post-processing pass for the rendered scene.
+     */
+    void renderPostProcessPass();
+
+    /**
+     * @brief Presents the final render (scene + post-process) to the target framebuffer.
      * 
-     * This method processes all surfaces that were queued by the `draw` method during the current frame. It performs the actual rendering 
-     * of these surfaces in their respective contexts (e.g., shadow maps, main scene) and applies any post-processing effects before 
-     * presenting the final output to the display.
+     * If no framebuffer is defined, the default framebuffer is used.
      */
     void present();
 
@@ -700,15 +698,9 @@ inline void Renderer::setCamera(const Camera3D& camera)
     }
 }
 
-inline void Renderer::addModelToRenderQueue(const R3D_Model& model, const Vector3& position, const Vector3& rotationAxis, float rotationAngle, const Vector3& scale)
+inline Matrix Renderer::getGlobalTrasformMatrix(R3D_BillboardMode billboard, const R3D_Transform& transform, const Vector3& position, const Vector3& rotationAxis, float rotationAngle, const Vector3& scale)
 {
-    const std::vector<R3D_Surface>& surfaces = static_cast<Model*>(model.internal)->surfaces;
-
-    // Computes the model's transformation matrix using the provided parameters,
-    // the transformation assigned to the model, any parent transformations if present,
-    // the transformation specified via rlgl, and also retrieves the model's actual global position.
-
-    Matrix transform = MatrixMultiply(
+    Matrix mat = MatrixMultiply(
         MatrixMultiply(
             MatrixScale(scale.x, scale.y, scale.z),
             MatrixRotate(rotationAxis, rotationAngle * DEG2RAD)
@@ -716,43 +708,35 @@ inline void Renderer::addModelToRenderQueue(const R3D_Model& model, const Vector
         MatrixTranslate(position.x, position.y, position.z)
     );
 
-    transform = MatrixMultiply(transform, R3D_TransformToGlobal(&model.transform));
-    transform = MatrixMultiply(transform, rlGetMatrixTransform());
+    mat = MatrixMultiply(mat, R3D_TransformToGlobal(&transform));
+    mat = MatrixMultiply(mat, rlGetMatrixTransform());
 
-    const Vector3 modelPosition = getMatrixTrasnlation(transform);
-
-    if (model.billboard != R3D_BILLBOARD_DISABLED) {
-        Matrix billboardRotation = getBillboardRotationMatrix(
-            model.billboard, modelPosition, mCamera.position
-        );
-        transform = MatrixMultiply(transform, billboardRotation);
+    if (billboard != R3D_BILLBOARD_DISABLED) {
+        const Vector3 translation = getMatrixTrasnlation(mat);
+        mat = MatrixMultiply(mat, getBillboardRotationMatrix(
+            billboard, translation, mCamera.position
+        ));
     }
 
-    // Retrieves the model's bounding box transformed according to the previously obtained transformation matrix.
+    return mat;
+}
 
-    BoundingBox globalAABB = model.aabb;
-    globalAABB.min = Vector3Transform(globalAABB.min, transform);
-    globalAABB.max = Vector3Transform(globalAABB.max, transform);
+template <typename Object>
+inline bool Renderer::isObjectVisible(const Object& object, const BoundingBox& globalAABB)
+{
+    if (object.shadow == R3D_CAST_SHADOW_ONLY) return false;
+    if (flags & R3D_FLAG_NO_FRUSTUM_CULLING) return true;
+    return mFrustumCamera.aabbIn(globalAABB);
+}
 
-    // Performs a bounding box test for the model against the camera's frustum if necessary
-    // to determine if the object should be rendered in the visible scene. This feature can be
-    // disabled using the initialization flag 'R3D_FLAG_NO_FRUSTUM_CULLING'.
-
-    bool drawSurfaceScene = true;
-    if (!(flags & R3D_FLAG_NO_FRUSTUM_CULLING || model.shadow == R3D_CAST_SHADOW_ONLY)) {
-        drawSurfaceScene = mFrustumCamera.aabbIn(globalAABB);
-    }
-
-    // Determines which lights will interact with the model.
-    // This part checks which lights should cast shadows onto the model
-    // and also associates the lights with the draw call if the model is to be rendered in the scene.
-
-    ShaderLightArray lightsWhichShouldIlluminate{};
-    int lightsWhichShouldIlluminateCount = 0;
+template <typename Object>
+inline void Renderer::setupLightsAndShadows(const Object& object, const BoundingBox& globalAABB, const Matrix& globalTransform, ShaderLightArray* lightArray)
+{
+    int lightCount = 0;
 
     for (const auto& [id, light] : mLights) {
 
-        if (!light.enabled) continue;
+        if (!light.enabled || (!light.shadow && lightArray == nullptr)) continue;
 
         // Here, we use a rather naive approach. If the light is not directional—
         // for instance, it does not simulate the sun—then we check whether the squared 
@@ -763,294 +747,69 @@ inline void Renderer::addModelToRenderQueue(const R3D_Model& model, const Vector
         // making it acceptable in this context.
 
         const float lightMaxDistSqr = light.maxDistance * light.maxDistance;
-        if (light.type != R3D_DIRLIGHT && Vector3DistanceSqr(modelPosition, light.position) > lightMaxDistSqr) {
+        const Vector3 globalPos = getMatrixTrasnlation(globalTransform);
+
+        if (light.type != R3D_DIRLIGHT && Vector3DistanceSqr(globalPos, light.position) > lightMaxDistSqr) {
             continue;
         }
 
-        // Here we add:
-        //   - 1: The surfaces to the shadow batch for the light
-        //   - 2: The light to the surface draw calls for the scene rendering
+        // Ici, si la lumière n'est pas une omnilight nous effectuons un test de frustum
+        // depuis son point de vue, si l'objet n'est pas "visible" depuis la lumiere, nous skippons
 
-        auto& batch = mShadowBatches.getBatch(id);
+        if (light.type != R3D_OMNILIGHT && !light.frustum.aabbIn(globalAABB)) {
+            continue;
+        }
 
-        switch (light.type) {
-            case R3D_DIRLIGHT: {
-                if (light.frustum.aabbIn(globalAABB)) {
-                    if (model.shadow != R3D_CAST_OFF && light.shadow) {
-                        for (const auto& surface : surfaces) {
-                            batch.push_back(DrawCall_Shadow(&surface.mesh, transform));
-                        }
-                    }
-                    if (drawSurfaceScene && lightsWhichShouldIlluminateCount < SHADER_LIGHT_COUNT) {
-                        lightsWhichShouldIlluminate[lightsWhichShouldIlluminateCount] = &light;
-                        lightsWhichShouldIlluminateCount++;
+        // Ici, si la lumiere produit des ombres nous ajoutons donc l'objet à son lot d'objet pour le rendu dans sa shadow map
+
+        if (light.shadow) {
+            if constexpr (std::is_same_v<Object, R3D_Model>) {
+                if (light.shadow && object.shadow != R3D_CAST_OFF) {
+                    for (const auto& surface : static_cast<Model*>(object.internal)->surfaces) {
+                        mShadowBatches.pushDrawCall(id, DrawCall_Shadow(&surface.mesh, globalTransform));
                     }
                 }
-            } break;
-            case R3D_SPOTLIGHT: {
-                if (light.frustum.aabbIn(globalAABB)) {
-                    if (model.shadow != R3D_CAST_OFF && light.shadow) {
-                        for (const auto& surface : surfaces) {
-                            batch.push_back(DrawCall_Shadow(&surface.mesh, transform));
-                        }
-                    }
-                    if (drawSurfaceScene && lightsWhichShouldIlluminateCount < SHADER_LIGHT_COUNT) {
-                        lightsWhichShouldIlluminate[lightsWhichShouldIlluminateCount] = &light;
-                        lightsWhichShouldIlluminateCount++;
-                    }
+            } else if constexpr (std::is_same_v<Object, R3D_Sprite>) {
+                if (light.shadow && object.shadow != R3D_CAST_OFF) {
+                    mShadowBatches.pushDrawCall(id, DrawCall_Shadow(&object, globalTransform));
                 }
-            } break;
-            case R3D_OMNILIGHT: {
-                // If we have reached this point, it means that the model is within the maximum influence distance of the omni light. 
-                // Therefore, we don't need to perform a frustum test since it illuminates in all directions.
-                if (model.shadow != R3D_CAST_OFF && light.shadow) {
-                    for (const auto& surface : surfaces) {
-                            batch.push_back(DrawCall_Shadow(&surface.mesh, transform));
-                    }
+            } else if constexpr (std::is_same_v<Object, R3D_ParticleSystemCPU>) {
+                if (light.shadow && object.shadow != R3D_CAST_OFF) {
+                    mShadowBatches.pushDrawCall(id, DrawCall_Shadow(&object));
                 }
-                if (drawSurfaceScene && lightsWhichShouldIlluminateCount < SHADER_LIGHT_COUNT) {
-                    lightsWhichShouldIlluminate[lightsWhichShouldIlluminateCount] = &light;
-                    lightsWhichShouldIlluminateCount++;
-                }
-            } break;
+            }
+        }
+
+        // Ici, si un tableau de lumiere a été donné et qu'il n'est pas remplit nous ajoutons cette lumiere à ce tableau
+
+        if (lightArray && lightCount < SHADER_LIGHT_COUNT) {
+            (*lightArray)[lightCount++] = &light;
         }
     }
+}
 
-    if (drawSurfaceScene) {
-        for (const auto& surface : surfaces) {
-            mSceneBatches.pushDrawCall(
-                surface.material.config,
-                DrawCall_Scene(surface, transform, lightsWhichShouldIlluminate)
+template <typename Object>
+inline void Renderer::addObjectToSceneBatch(const Object& object, const Matrix& globalTransform, const ShaderLightArray& lightArray)
+{
+    if constexpr (std::is_same_v<Object, R3D_Model>) {
+        for (const auto& surface : static_cast<Model*>(object.internal)->surfaces) {
+            mSceneBatches.pushDrawCall(surface.material.config,
+                DrawCall_Scene(surface, globalTransform, lightArray)
             );
         }
-    }
-}
-
-inline void Renderer::addSpriteToRenderQueue(const R3D_Sprite& sprite, const Vector3& position, const Vector3& rotationAxis, float rotationAngle, const Vector2& size)
-{
-    // Computes the sprite's transformation matrix using the provided parameters,
-    // the transformation assigned to the sprite, any parent transformations if present,
-    // the transformation specified via rlgl, and also retrieves the sprite's actual global position.
-
-    Matrix transform = MatrixMultiply(
-        MatrixMultiply(
-            MatrixScale(size.x * 0.5f, size.y * 0.5f, 1.0f),
-            MatrixRotate(rotationAxis, rotationAngle * DEG2RAD)
-        ),
-        MatrixTranslate(position.x, position.y, position.z)
-    );
-
-    transform = MatrixMultiply(transform, R3D_TransformToGlobal(&sprite.transform));
-    transform = MatrixMultiply(transform, rlGetMatrixTransform());
-
-    const Vector3 centerPosition = getMatrixTrasnlation(transform);
-
-    if (sprite.billboard != R3D_BILLBOARD_DISABLED) {
-        Matrix billboardRotation = getBillboardRotationMatrix(
-            sprite.billboard, centerPosition, mCamera.position
+    } else if constexpr (std::is_same_v<Object, R3D_Sprite>) {
+        mSceneBatches.pushDrawCall(object.material.config,
+            DrawCall_Scene(&object, globalTransform, lightArray)
         );
-        transform = MatrixMultiply(transform, billboardRotation);
-    }
-
-    // Retrieves the sprite's bounding box transformed according to the previously obtained transformation matrix.
-
-    BoundingBox globalAABB = {
-        { -1.0f, -1.0f, -1.0f },
-        { 1.0f, 1.0f, 1.0f }
-    };
-    globalAABB.min = Vector3Transform(globalAABB.min, transform);
-    globalAABB.max = Vector3Transform(globalAABB.max, transform);
-
-    // Performs a bounding box test for the sprite against the camera's frustum if necessary
-    // to determine if the object should be rendered in the visible scene. This feature can be
-    // disabled using the initialization flag 'R3D_FLAG_NO_FRUSTUM_CULLING'.
-
-    bool drawSurfaceScene = true;
-    if (!(flags & R3D_FLAG_NO_FRUSTUM_CULLING || sprite.shadow == R3D_CAST_SHADOW_ONLY)) {
-        drawSurfaceScene = mFrustumCamera.aabbIn(globalAABB);
-    }
-
-    // Determines which lights will interact with the sprite.
-    // This part checks which lights should cast shadows onto the sprite
-    // and also associates the lights with the draw call if the sprite is to be rendered in the scene.
-
-    ShaderLightArray lightsWhichShouldIlluminate{};
-    int lightsWhichShouldIlluminateCount = 0;
-
-    for (const auto& [id, light] : mLights) {
-
-        if (!light.enabled) continue;
-
-        // Here, we use a rather naive approach. If the light is not directional—
-        // for instance, it does not simulate the sun—then we check whether the squared 
-        // distance between the origin of the sprite and the light exceeds the maximum range 
-        // of the light's effective field. If it does, we can safely omit this light source for the sprite.
-
-        // Using the squared distance is faster to compute and provides a certain margin, 
-        // making it acceptable in this context.
-
-        const float lightMaxDistSqr = light.maxDistance * light.maxDistance;
-        if (light.type != R3D_DIRLIGHT && Vector3DistanceSqr(centerPosition, light.position) > lightMaxDistSqr) {
-            continue;
-        }
-
-        // Here we add:
-        //   - 1: The surfaces to the shadow batch for the light
-        //   - 2: The light to the surface draw calls for the scene rendering
-
-        auto& batch = mShadowBatches.getBatch(id);
-
-        switch (light.type) {
-            case R3D_DIRLIGHT: {
-                if (light.frustum.aabbIn(globalAABB)) {
-                    if (sprite.shadow != R3D_CAST_OFF && light.shadow) {
-                        batch.push_back(DrawCall_Shadow(&sprite, transform));
-                    }
-                    if (drawSurfaceScene && lightsWhichShouldIlluminateCount < SHADER_LIGHT_COUNT) {
-                        lightsWhichShouldIlluminate[lightsWhichShouldIlluminateCount] = &light;
-                        lightsWhichShouldIlluminateCount++;
-                    }
-                }
-            } break;
-            case R3D_SPOTLIGHT: {
-                if (light.frustum.aabbIn(globalAABB)) {
-                    if (sprite.shadow != R3D_CAST_OFF && light.shadow) {
-                        batch.push_back(DrawCall_Shadow(&sprite, transform));
-                    }
-                    if (drawSurfaceScene && lightsWhichShouldIlluminateCount < SHADER_LIGHT_COUNT) {
-                        lightsWhichShouldIlluminate[lightsWhichShouldIlluminateCount] = &light;
-                        lightsWhichShouldIlluminateCount++;
-                    }
-                }
-            } break;
-            case R3D_OMNILIGHT: {
-                // If we have reached this point, it means that the sprite is within the maximum influence distance of the omni light. 
-                // Therefore, we don't need to perform a frustum test since it illuminates in all directions.
-                if (sprite.shadow != R3D_CAST_OFF && light.shadow) {
-                    batch.push_back(DrawCall_Shadow(&sprite, transform));
-                }
-                if (drawSurfaceScene && lightsWhichShouldIlluminateCount < SHADER_LIGHT_COUNT) {
-                    lightsWhichShouldIlluminate[lightsWhichShouldIlluminateCount] = &light;
-                    lightsWhichShouldIlluminateCount++;
-                }
-            } break;
-        }
-    }
-
-    if (drawSurfaceScene) {
-        mSceneBatches.pushDrawCall(
-            sprite.material.config,
-            DrawCall_Scene(&sprite, transform, lightsWhichShouldIlluminate)
+    } else if constexpr (std::is_same_v<Object, R3D_ParticleSystemCPU>) {
+        mSceneBatches.pushDrawCall(object.surface.material.config,
+            DrawCall_Scene(&object, lightArray)
         );
     }
 }
 
-inline void Renderer::addParticleSysCpuToRenderQueue(R3D_ParticleSystemCPU& system)
+inline void Renderer::renderShadowPass()
 {
-    // Computes the system's transformation matrix using the provided parameters,
-    // the transformation assigned to the system, any parent transformations if present,
-    // the transformation specified via rlgl, and also retrieves the system's actual global position.
-
-    Matrix transform = MatrixTranslate(system.position.x, system.position.y, system.position.z);
-    transform = MatrixMultiply(transform, rlGetMatrixTransform());
-
-    // Retrieves the system's bounding box transformed according to the previously obtained transformation matrix.
-
-    BoundingBox globalAABB = system.aabb;
-    globalAABB.min = Vector3Transform(globalAABB.min, transform);
-    globalAABB.max = Vector3Transform(globalAABB.max, transform);
-
-    // Performs a bounding box test for the system against the camera's frustum if necessary
-    // to determine if the object should be rendered in the visible scene. This feature can be
-    // disabled using the initialization flag 'R3D_FLAG_NO_FRUSTUM_CULLING'.
-
-    bool drawSurfaceScene = true;
-    if (!(flags & R3D_FLAG_NO_FRUSTUM_CULLING || system.shadow == R3D_CAST_SHADOW_ONLY)) {
-        drawSurfaceScene = mFrustumCamera.aabbIn(globalAABB);
-    }
-
-    // Determines which lights will interact with the system.
-    // This part checks which lights should cast shadows onto the system
-    // and also associates the lights with the draw call if the system is to be rendered in the scene.
-
-    ShaderLightArray lightsWhichShouldIlluminate{};
-    int lightsWhichShouldIlluminateCount = 0;
-
-    for (const auto& [id, light] : mLights) {
-
-        if (!light.enabled) continue;
-
-        // Here, we use a rather naive approach. If the light is not directional—
-        // for instance, it does not simulate the sun—then we check whether the squared 
-        // distance between the origin of the system and the light exceeds the maximum range 
-        // of the light's effective field. If it does, we can safely omit this light source for the system.
-
-        // Using the squared distance is faster to compute and provides a certain margin, 
-        // making it acceptable in this context.
-
-        const float lightMaxDistSqr = light.maxDistance * light.maxDistance;
-        if (light.type != R3D_DIRLIGHT && Vector3DistanceSqr(system.position, light.position) > lightMaxDistSqr) {
-            continue;
-        }
-
-        // Here we add:
-        //   - 1: The surfaces to the shadow batch for the light
-        //   - 2: The light to the surface draw calls for the scene rendering
-
-        auto& batch = mShadowBatches.getBatch(id);
-
-        switch (light.type) {
-            case R3D_DIRLIGHT: {
-                if (light.frustum.aabbIn(globalAABB)) {
-                    if (system.shadow != R3D_CAST_OFF && light.shadow) {
-                        batch.push_back(DrawCall_Shadow(&system));
-                    }
-                    if (drawSurfaceScene && lightsWhichShouldIlluminateCount < SHADER_LIGHT_COUNT) {
-                        lightsWhichShouldIlluminate[lightsWhichShouldIlluminateCount] = &light;
-                        lightsWhichShouldIlluminateCount++;
-                    }
-                }
-            } break;
-            case R3D_SPOTLIGHT: {
-                if (light.frustum.aabbIn(globalAABB)) {
-                    if (system.shadow != R3D_CAST_OFF && light.shadow) {
-                        batch.push_back(DrawCall_Shadow(&system));
-                    }
-                    if (drawSurfaceScene && lightsWhichShouldIlluminateCount < SHADER_LIGHT_COUNT) {
-                        lightsWhichShouldIlluminate[lightsWhichShouldIlluminateCount] = &light;
-                        lightsWhichShouldIlluminateCount++;
-                    }
-                }
-            } break;
-            case R3D_OMNILIGHT: {
-                // If we have reached this point, it means that the system is within the maximum influence distance of the omni light. 
-                // Therefore, we don't need to perform a frustum test since it illuminates in all directions.
-                if (system.shadow != R3D_CAST_OFF && light.shadow) {
-                        batch.push_back(DrawCall_Shadow(&system));
-                }
-                if (drawSurfaceScene && lightsWhichShouldIlluminateCount < SHADER_LIGHT_COUNT) {
-                    lightsWhichShouldIlluminate[lightsWhichShouldIlluminateCount] = &light;
-                    lightsWhichShouldIlluminateCount++;
-                }
-            } break;
-        }
-    }
-
-    if (drawSurfaceScene) {
-        mSceneBatches.pushDrawCall(
-            system.surface.material.config,
-            DrawCall_Scene(&system, lightsWhichShouldIlluminate)
-        );
-    }
-}
-
-inline void Renderer::present()
-{
-    rlDrawRenderBatchActive();
-    rlEnableDepthTest();
-
-    /* Shadow casting */
-
     rlDisableColorBlend();  /**< We deactivate the color bleding because the omni
                              *   lights write the distances in a color attachment
                              */
@@ -1104,9 +863,10 @@ inline void Renderer::present()
 
     rlMatrixMode(RL_MODELVIEW);
     rlLoadIdentity();
+}
 
-    /* Sorting scene depth if necessary */
-    
+inline void Renderer::renderScenePass()
+{
     const Vector3 camPos = mCamera.position;
 
     switch (depthSortingOrder) {
@@ -1137,9 +897,6 @@ inline void Renderer::present()
         default:
             break;
     }
-
-
-    /* Render scene */
 
     mTargetScene.begin();
     {
@@ -1183,48 +940,19 @@ inline void Renderer::present()
             if (batch.empty()) continue;
 
             // TODO: Find a method to reduce calls to state changes, even if probably ignored by most drivers...
-            switch (config.blendMode) {
-                case R3D_BLEND_DISABLED:
-                    rlDisableColorBlend();
-                    break;
-                case R3D_BLEND_ALPHA:
-                    rlEnableColorBlend();
-                    rlSetBlendMode(RL_BLEND_ALPHA);
-                    break;
-                case R3D_BLEND_ADDITIVE:
-                    rlEnableColorBlend();
-                    rlSetBlendMode(RL_BLEND_ADDITIVE);
-                    break;
-                case R3D_BLEND_MULTIPLIED:
-                    rlEnableColorBlend();
-                    rlSetBlendMode(RL_BLEND_MULTIPLIED);
-                    break;
-                case R3D_BLEND_ADD_COLORS:
-                    rlEnableColorBlend();
-                    rlSetBlendMode(RL_BLEND_ADD_COLORS);
-                    break;
-                case R3D_BLEND_SUBTRACT_COLORS:
-                    rlEnableColorBlend();
-                    rlSetBlendMode(RL_BLEND_SUBTRACT_COLORS);
-                    break;
-                case R3D_BLEND_ALPHA_PREMULTIPLY:
-                    rlEnableColorBlend();
-                    rlSetBlendMode(RL_BLEND_ALPHA_PREMULTIPLY);
-                    break;
+
+            if (config.blendMode == R3D_BLEND_DISABLED) {
+                rlDisableColorBlend();
+            } else {
+                rlEnableColorBlend();
+                rlSetBlendMode(config.blendMode - 1);
             }
 
-            switch (config.cullMode) {
-                case R3D_CULL_DISABLED:
-                    rlDisableBackfaceCulling();
-                    break;
-                case R3D_CULL_FRONT:
-                    rlEnableBackfaceCulling();
-                    rlSetCullFace(RL_CULL_FACE_FRONT);
-                    break;
-                case R3D_CULL_BACK:
-                    rlEnableBackfaceCulling();
-                    rlSetCullFace(RL_CULL_FACE_BACK);
-                    break;
+            if (config.cullMode == R3D_CULL_DISABLED) {
+                rlDisableBackfaceCulling();
+            } else {
+                rlEnableBackfaceCulling();
+                rlSetCullFace(config.cullMode - 1);
             }
 
             ShaderMaterial& shader = mShaderMaterials.at(config.shader);
@@ -1256,12 +984,11 @@ inline void Renderer::present()
         rlSetCullFace(RL_CULL_FACE_BACK);
     }
     mTargetScene.end();
+}
 
-    /* Here we are done with 3D, we can deactivate the depth test */
-
-    rlDisableDepthTest();
-
-    /* Apply gaussian blur for bloom if needed */
+inline void Renderer::renderPostProcessPass()
+{
+    /* Apply gaussian blur (two passes) for bloom if needed */
 
     bool horizontal = true;
     if (environment.bloom.mode != R3D_BLOOM_DISABLED) {
@@ -1324,9 +1051,10 @@ inline void Renderer::present()
         }
         mShaderPostFX.end();
     mTargetPostFX.end();
+}
 
-    /* Blit result to the main framebuffer */
-
+inline void Renderer::present()
+{
     bool blitLinear = R3D_FLAG_BLIT_LINEAR;
     GLint target = customRenderTarget ? customRenderTarget->id : 0;
 
@@ -1337,10 +1065,6 @@ inline void Renderer::present()
         mTargetPostFX.blitAspectExpand(target, GLAttachement::COLOR_0, false, blitLinear);
         mTargetScene.blitAspectExpand(target, GLAttachement::NONE, true, false);
     }
-
-    /* Reset viewport */
-
-    glViewport(0, 0, GetScreenWidth(), GetScreenHeight());
 }
 
 inline void Renderer::updateInternalResolution(int newWidth, int newHeight)
@@ -1687,7 +1411,7 @@ inline DrawCall_Scene::DrawCall_Scene(const R3D_Sprite* sprite, const Matrix& tr
     : mCall(Sprite { sprite, lights, transform })
 { }
 
-inline DrawCall_Scene::DrawCall_Scene(R3D_ParticleSystemCPU* system, const ShaderLightArray& lights)
+inline DrawCall_Scene::DrawCall_Scene(const R3D_ParticleSystemCPU* system, const ShaderLightArray& lights)
     : mCall(ParticlesCPU { system, lights })
 { }
 
@@ -1776,21 +1500,21 @@ inline void DrawCall_Scene::drawParticlesCPU(ShaderMaterial& shader) const
             transform = MatrixMultiply(transform, billboardRotation);
         }
 
-        call.system->surface.material.albedo.color = (Color) {
+        R3D_Material material = call.system->surface.material;
+
+        material.albedo.color = (Color) {
             static_cast<uint8_t>((baseColor.r * particle.color.r) / 255),
             static_cast<uint8_t>((baseColor.g * particle.color.g) / 255),
             static_cast<uint8_t>((baseColor.b * particle.color.b) / 255),
             static_cast<uint8_t>((baseColor.a * particle.color.a) / 255)
         };
 
-        shader.setMaterial(call.system->surface.material);
+        shader.setMaterial(material);
         shader.setMatModel(transform);
         shader.setLights(call.lights);
 
-        gRenderer->drawMeshScene(call.system->surface.mesh, transform, shader, call.system->surface.material.config);
+        gRenderer->drawMeshScene(call.system->surface.mesh, transform, shader, material.config);
     }
-
-    call.system->surface.material.albedo.color = baseColor;
 }
 
 } // namespace r3d

@@ -92,40 +92,88 @@ void R3D_Begin(Camera3D camera)
 
 void R3D_DrawModel(const R3D_Model* model)
 {
-    gRenderer->addModelToRenderQueue(*model, {}, {}, 0.0f, { 1.0f, 1.0f, 1.0f });
+    R3D_DrawModelPro(model, {}, {}, 0.0f, { 1.0f, 1.0f, 1.0f });
 }
 
 void R3D_DrawModelEx(const R3D_Model* model, Vector3 position, float scale)
 {
-    gRenderer->addModelToRenderQueue(*model, position, {}, 0.0f, { scale, scale, scale });
+    R3D_DrawModelPro(model, position, {}, 0.0f, { scale, scale, scale });
 }
 
 void R3D_DrawModelPro(const R3D_Model* model, Vector3 position, Vector3 rotationAxis, float rotationAngle, Vector3 scale)
 {
-    gRenderer->addModelToRenderQueue(*model, position, rotationAxis, rotationAngle, scale);
+    Matrix transform = gRenderer->getGlobalTrasformMatrix(
+        model->billboard, model->transform,
+        position, rotationAxis, rotationAngle, scale
+    );
+
+    BoundingBox aabb = r3d::transformBoundingBox(model->aabb, transform);
+
+    if (gRenderer->isObjectVisible(*model, aabb)) {
+        r3d::ShaderLightArray lightArray{};
+        gRenderer->setupLightsAndShadows(*model, aabb, transform, &lightArray);
+        gRenderer->addObjectToSceneBatch(*model, transform, lightArray);
+    } else {
+        gRenderer->setupLightsAndShadows(*model, aabb, transform, nullptr);
+    }
 }
 
 void R3D_DrawSprite(const R3D_Sprite* sprite)
 {
-    gRenderer->addSpriteToRenderQueue(*sprite, { }, { }, 0.0f, { 1.0f, 1.0f });
+    R3D_DrawSpritePro(sprite, { }, { }, 0.0f, { 1.0f, 1.0f });
 }
 
 void R3D_DrawSpriteEx(const R3D_Sprite* sprite, Vector3 position, float size)
 {
-    gRenderer->addSpriteToRenderQueue(*sprite, position, { }, 0.0f, { size, size });
+    R3D_DrawSpritePro(sprite, position, { }, 0.0f, { size, size });
 }
 
 void R3D_DrawSpritePro(const R3D_Sprite* sprite, Vector3 position, Vector3 rotationAxis, float rotationAngle, Vector2 size)
 {
-    gRenderer->addSpriteToRenderQueue(*sprite, position, rotationAxis, rotationAngle, size);
+    Matrix transform = gRenderer->getGlobalTrasformMatrix(
+        sprite->billboard, sprite->transform,
+        position, rotationAxis, rotationAngle, { size.x * 0.5f, size.y * 0.5f, 1.0f }
+    );
+
+    BoundingBox aabb = r3d::transformBoundingBox({
+        { -1.0f, -1.0f, 0 },
+        { 1.0f, 1.0f, 0 }
+    }, transform);
+
+    if (gRenderer->isObjectVisible(*sprite, aabb)) {
+        r3d::ShaderLightArray lightArray{};
+        gRenderer->setupLightsAndShadows(*sprite, aabb, transform, &lightArray);
+        gRenderer->addObjectToSceneBatch(*sprite, transform, lightArray);
+    } else {
+        gRenderer->setupLightsAndShadows(*sprite, aabb, transform, nullptr);
+    }
 }
 
 void R3D_DrawParticleSystemCPU(R3D_ParticleSystemCPU* system)
 {
-    gRenderer->addParticleSysCpuToRenderQueue(*system);
+    Matrix transform = MatrixTranslate(system->position.x, system->position.y, system->position.z);
+
+    if (gRenderer->isObjectVisible(*system, system->aabb)) {
+        r3d::ShaderLightArray lightArray{};
+        gRenderer->setupLightsAndShadows(*system, system->aabb, transform, &lightArray);
+        gRenderer->addObjectToSceneBatch(*system, transform, lightArray);
+    } else {
+        gRenderer->setupLightsAndShadows(*system, system->aabb, transform, nullptr);
+    }
 }
 
 void R3D_End()
 {
+    rlDrawRenderBatchActive();
+    rlEnableDepthTest();
+
+    gRenderer->renderShadowPass();
+    gRenderer->renderScenePass();
+
+    rlDisableDepthTest();
+
+    gRenderer->renderPostProcessPass();
     gRenderer->present();
+
+    rlViewport(0, 0, GetScreenWidth(), GetScreenHeight());
 }

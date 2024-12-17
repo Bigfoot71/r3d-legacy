@@ -80,40 +80,6 @@ inline Vector3 getMatrixScale(const Matrix& mat)
 }
 
 /**
- * @brief Determines which cube map face corresponds to the given direction.
- * 
- * This function checks the absolute values of the direction vector's components (X, Y, Z) 
- * and determines which face of a cube map the direction vector points to. It is used for 
- * mapping a direction to one of the six cube map faces.
- * 
- * The direction does not need to be normalized for this function to work correctly.
- * 
- * @param direction The direction vector (a `Vector3`) to check.
- * 
- * @return An integer representing the cube map face:
- * - 0: +X face
- * - 1: -X face
- * - 2: +Y face
- * - 3: -Y face
- * - 4: +Z face
- * - 5: -Z face
- */
-inline int getCubeMapFace(const Vector3& direction)
-{
-    float absX = std::abs(direction.x);
-    float absY = std::abs(direction.y);
-    float absZ = std::abs(direction.z);
-
-    if (absX >= absY && absX >= absZ) {
-        return (direction.x > 0) ? 0 : 1;  // +X or -X
-    } else if (absY >= absX && absY >= absZ) {
-        return (direction.y > 0) ? 2 : 3;  // +Y or -Y
-    } else {
-        return (direction.z > 0) ? 4 : 5;  // +Z or -Z
-    }
-}
-
-/**
  * @brief Computes a billboard rotation matrix to align a 3D object with the camera.
  *
  * This function generates a rotation matrix that aligns a 3D object (the "billboard") 
@@ -180,6 +146,48 @@ inline Matrix getBillboardRotationMatrix(R3D_BillboardMode mode, const Vector3 m
     }
 
     return billboardRotation;
+}
+
+inline BoundingBox transformBoundingBox(const BoundingBox& aabb, const Matrix& transform)
+{
+    return {
+        Vector3Transform(aabb.min, transform),
+        Vector3Transform(aabb.max, transform)
+    };
+}
+
+/**
+ * @brief Determines which cube map face corresponds to the given direction.
+ * 
+ * This function checks the absolute values of the direction vector's components (X, Y, Z) 
+ * and determines which face of a cube map the direction vector points to. It is used for 
+ * mapping a direction to one of the six cube map faces.
+ * 
+ * The direction does not need to be normalized for this function to work correctly.
+ * 
+ * @param direction The direction vector (a `Vector3`) to check.
+ * 
+ * @return An integer representing the cube map face:
+ * - 0: +X face
+ * - 1: -X face
+ * - 2: +Y face
+ * - 3: -Y face
+ * - 4: +Z face
+ * - 5: -Z face
+ */
+inline int getCubeMapFace(const Vector3& direction)
+{
+    float absX = std::abs(direction.x);
+    float absY = std::abs(direction.y);
+    float absZ = std::abs(direction.z);
+
+    if (absX >= absY && absX >= absZ) {
+        return (direction.x > 0) ? 0 : 1;  // +X or -X
+    } else if (absY >= absX && absY >= absZ) {
+        return (direction.y > 0) ? 2 : 3;  // +Y or -Y
+    } else {
+        return (direction.z > 0) ? 4 : 5;  // +Z or -Z
+    }
 }
 
 } // namespace r3d
