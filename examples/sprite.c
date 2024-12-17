@@ -1,5 +1,3 @@
-#include "raylib.h"
-#include "raymath.h"
 #include <stddef.h>
 #include <r3d.h>
 
@@ -45,7 +43,7 @@ int main(void)
         BeginDrawing();
             ClearBackground(BLACK);
             R3D_Begin(camera);
-                R3D_DrawSpriteEx(&sprite, Vector3Zero(), 10.0f);
+                R3D_DrawSpriteEx(&sprite, (Vector3) { 0 }, 10.0f);
             R3D_End();
             DrawFPS(10, 10);
         EndDrawing();
