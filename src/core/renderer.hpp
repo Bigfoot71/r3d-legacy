@@ -31,13 +31,13 @@
 
 #include "../detail/GL/GLTexture.hpp"
 #include "../detail/GL/GLShader.hpp"
-#include "../detail/GL/GLQuad.hpp"
 
 #include "../detail/ShaderMaterial.hpp"
 #include "../detail/RenderTarget.hpp"
 #include "../detail/BatchMap.hpp"
 #include "../detail/Frustum.hpp"
 #include "../detail/IDMan.hpp"
+#include "../detail/Quad.hpp"
 #include "../detail/GL.hpp"
 
 #include "../objects/skybox.hpp"
@@ -490,7 +490,7 @@ private:
 
     RLTexture mBlackTexture2D;      ///< Black placeholder texture.
     RLTexture mWhiteTexture2D;      ///< White placeholder texture.
-    GLQuad mQuad;                   ///< Quad used for rendering.
+    Quad mQuad;                     ///< Quad used for rendering.
 
     GLShader mShaderBlur;           ///< Shader for blurring.
     GLShader mShaderPostFX;         ///< Shader for post-processing effects.

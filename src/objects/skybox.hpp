@@ -22,9 +22,11 @@
 
 #include "detail/ShaderCodes.hpp"
 
-#include "../detail/GL.hpp"
 #include "../detail/GL/GLShader.hpp"
 #include "../detail/RL/RLTexture.hpp"
+
+#include "../detail/Quad.hpp"
+#include "../detail/Cube.hpp"
 
 #include <raylib.h>
 #include <raymath.h>
@@ -89,9 +91,8 @@ private:
         GLuint FBO;     ///< Used for texture generation
         GLuint RBO;     ///< Render buffer for depth (FBO)
 
-        GLuint VBO;     ///< VBO of cube positions
-        GLuint EBO;     ///< EBO (elements) of the cube
-        GLuint VAO;     ///< VAO -> VBO + EBO
+        Quad quad;
+        Cube cube;
 
         SharedData();
         ~SharedData();
@@ -158,11 +159,11 @@ inline void Skybox::draw(const Quaternion& rotation) const
     shader.setValue("uRotation", rotation);
 
     // Try binding vertex array objects (VAO) or use VBOs if not possible
-    if (!rlEnableVertexArray(sShared->VAO)) {
-        rlEnableVertexBuffer(sShared->VBO);
+    if (!rlEnableVertexArray(sShared->cube.vao())) {
+        rlEnableVertexBuffer(sShared->cube.vbo());
         rlSetVertexAttribute(RL_DEFAULT_SHADER_ATTRIB_LOCATION_POSITION, 3, RL_FLOAT, 0, 0, 0);
         rlEnableVertexAttribute(RL_DEFAULT_SHADER_ATTRIB_LOCATION_POSITION);
-        rlEnableVertexBufferElement(sShared->EBO);
+        rlEnableVertexBufferElement(sShared->cube.ebo());
     }
 
     // Draw skybox (supporting stereo rendering)
@@ -264,7 +265,7 @@ inline void Skybox::loadHDR(const std::string& hdrSkyboxTexturePath, int sizeFac
 
                 // Clear the framebuffer and draw the cube
                 glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-                rlLoadDrawCube();
+                sShared->cube.draw();
             }
 
         // Disable the shader and textures
@@ -336,7 +337,7 @@ inline void Skybox::generateIrradiance()
             sShared->shaderIrradianceConvolution.setValue("uMatView", sShared->matCubeViews[i]);
             glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, mIrradiance.id, 0);
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-            rlLoadDrawCube();
+            sShared->cube.draw();
         }
 
     // Disable the shader and framebuffer
@@ -400,7 +401,7 @@ inline void Skybox::generatePrefilter()
                 sShared->shaderPrefilter.setValue("uMatView", sShared->matCubeViews[i]);
                 glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, mPrefilter.id, mip);
                 glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-                rlLoadDrawCube();
+                sShared->cube.draw();
             }
         }
 
@@ -496,20 +497,6 @@ inline Skybox::SharedData::SharedData()
         1, 0, 4
     };
 
-    // Load vertex array object (VAO) and bind it
-    VAO = rlLoadVertexArray();
-    rlEnableVertexArray(VAO);
-    {
-        // Load vertex buffer object (VBO) for positions and bind it
-        VBO = rlLoadVertexBuffer(CUBE_POSITIONS, sizeof(CUBE_POSITIONS), false);
-        rlSetVertexAttribute(0, 3, RL_FLOAT, 0, 0, 0);
-        rlEnableVertexAttribute(0);
-
-        // Load element buffer object (EBO) for indices and bind it
-        EBO = rlLoadVertexBufferElement(CUBE_INDICES, sizeof(CUBE_INDICES), false);
-    }
-    rlDisableVertexArray();
-
     /* Generate BRDF LUT texture (see first TODO) */
 
     generateBrdfLUT();
@@ -517,10 +504,6 @@ inline Skybox::SharedData::SharedData()
 
 inline Skybox::SharedData::~SharedData()
 {
-    rlUnloadVertexBuffer(EBO);
-    rlUnloadVertexBuffer(VBO);
-    rlUnloadVertexArray(VAO);
-
     glDeleteRenderbuffers(1, &RBO);
     rlUnloadFramebuffer(FBO);
 }
@@ -549,7 +532,7 @@ inline void Skybox::SharedData::generateBrdfLUT()
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     shaderBRDF.begin();
-        rlLoadDrawQuad();
+        quad.draw();
     shaderBRDF.end();
 
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
