@@ -1583,16 +1583,6 @@ inline void Renderer::drawShadowMap(R3D_Light light, int x, int y, int width, in
 
 inline void Renderer::drawMeshShadow(const Light& light, const Mesh& mesh, const Matrix& transform) const
 {
-    Matrix matView = rlGetMatrixModelview();
-
-    Matrix matModelView = MatrixMultiply(transform, matView);
-    Matrix matProjection = rlGetMatrixProjection();
-
-    if (light.type == R3D_OMNILIGHT) {
-        rlSetUniform(mShaderDepthCube.locs[SHADER_LOC_VECTOR_VIEW], &light.position, SHADER_UNIFORM_VEC3, 1);
-        rlSetUniformMatrix(mShaderDepthCube.locs[SHADER_LOC_MATRIX_MODEL], transform);
-    }
-
     if (!rlEnableVertexArray(mesh.vaoId)) {
         rlEnableVertexBuffer(mesh.vboId[0]);
         rlSetVertexAttribute(RL_DEFAULT_SHADER_ATTRIB_LOCATION_POSITION, 3, RL_FLOAT, 0, 0, 0);
@@ -1602,37 +1592,28 @@ inline void Renderer::drawMeshShadow(const Light& light, const Mesh& mesh, const
         }
     }
 
-    int eyeCount = rlIsStereoRenderEnabled() ? 2 : 1;
+    ::Matrix matMVP = MatrixMultiply(
+        MatrixMultiply(transform, rlGetMatrixModelview()),
+        rlGetMatrixProjection()
+    );
 
-    for (int eye = 0; eye < eyeCount; eye++) {
-        ::Matrix matMVP = MatrixIdentity();
+    if (light.type == R3D_OMNILIGHT) {
+        rlSetUniform(mShaderDepthCube.locs[SHADER_LOC_VECTOR_VIEW], &light.position, SHADER_UNIFORM_VEC3, 1);
+        rlSetUniformMatrix(mShaderDepthCube.locs[SHADER_LOC_MATRIX_MODEL], transform);
+        rlSetUniformMatrix(mShaderDepthCube.locs[SHADER_LOC_MATRIX_MVP], matMVP);
+    } else {
+        rlSetUniformMatrix(mShaderDepth.locs[SHADER_LOC_MATRIX_MVP], matMVP);
+    }
 
-        if (eyeCount == 1) {
-            matMVP = MatrixMultiply(matModelView, matProjection);
-        } else {
-            glViewport(eye * light.map->width() / 2, 0, light.map->width() / 2, light.map->height());
-            matMVP = MatrixMultiply(MatrixMultiply(matModelView, rlGetMatrixViewOffsetStereo(eye)), rlGetMatrixProjectionStereo(eye));
-        }
-
-        if (light.type == R3D_OMNILIGHT) {
-            rlSetUniformMatrix(mShaderDepthCube.locs[SHADER_LOC_MATRIX_MVP], matMVP);
-        } else {
-            rlSetUniformMatrix(mShaderDepth.locs[SHADER_LOC_MATRIX_MVP], matMVP);
-        }
-
-        if (mesh.vboId[RL_DEFAULT_SHADER_ATTRIB_LOCATION_INDICES] == 0) {
-            rlDrawVertexArray(0, mesh.vertexCount);
-        } else {
-            rlDrawVertexArrayElements(0, 3 * mesh.triangleCount, 0);
-        }
+    if (mesh.vboId[RL_DEFAULT_SHADER_ATTRIB_LOCATION_INDICES] == 0) {
+        rlDrawVertexArray(0, mesh.vertexCount);
+    } else {
+        rlDrawVertexArrayElements(0, 3 * mesh.triangleCount, 0);
     }
 
     rlDisableVertexArray();
     rlDisableVertexBuffer();
     rlDisableVertexBufferElement();
-
-    rlSetMatrixModelview(matView);
-    rlSetMatrixProjection(matProjection);
 }
 
 inline void Renderer::drawMeshScene(const Mesh& mesh, const Matrix& transform, ShaderMaterial& shader, R3D_MaterialConfig config) const
