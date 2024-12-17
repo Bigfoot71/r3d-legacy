@@ -43,11 +43,11 @@ private:
 
 private:
     static constexpr float VERTICES[] = {
-        // Positions         Texcoords
-        -1.0f,  1.0f, 0.0f,   0.0f, 1.0f,
-        -1.0f, -1.0f, 0.0f,   0.0f, 0.0f,
-        1.0f,  1.0f, 0.0f,   1.0f, 1.0f,
-        1.0f, -1.0f, 0.0f,   1.0f, 0.0f,
+        // Positions         Normals             Texcoords
+       -1.0f,  1.0f, 0.0f,   0.0f, 0.0f, 1.0f,   0.0f, 1.0f,
+       -1.0f, -1.0f, 0.0f,   0.0f, 0.0f, 1.0f,   0.0f, 0.0f,
+        1.0f,  1.0f, 0.0f,   0.0f, 0.0f, 1.0f,   1.0f, 1.0f,
+        1.0f, -1.0f, 0.0f,   0.0f, 0.0f, 1.0f,   1.0f, 0.0f,
     };
 
     static constexpr unsigned short INDICES[] = {
@@ -70,11 +70,13 @@ inline Quad::Quad()
     sEBO = rlLoadVertexBufferElement(INDICES, sizeof(INDICES), false);
     sVBO = rlLoadVertexBuffer(VERTICES, sizeof(VERTICES), false);
 
-    rlSetVertexAttribute(RL_DEFAULT_SHADER_ATTRIB_LOCATION_POSITION, 3, RL_FLOAT, false, 5 * sizeof(float), 0);
-    rlSetVertexAttribute(RL_DEFAULT_SHADER_ATTRIB_LOCATION_TEXCOORD, 2, RL_FLOAT, false, 5 * sizeof(float), 3 * sizeof(float));
+    rlSetVertexAttribute(RL_DEFAULT_SHADER_ATTRIB_LOCATION_POSITION, 3, RL_FLOAT, false, 8 * sizeof(float), 0);
+    rlSetVertexAttribute(RL_DEFAULT_SHADER_ATTRIB_LOCATION_TEXCOORD, 2, RL_FLOAT, false, 8 * sizeof(float), 6 * sizeof(float));
+    rlSetVertexAttribute(RL_DEFAULT_SHADER_ATTRIB_LOCATION_NORMAL, 3, RL_FLOAT, false, 8 * sizeof(float), 3 * sizeof(float));
 
     rlEnableVertexAttribute(RL_DEFAULT_SHADER_ATTRIB_LOCATION_POSITION);
     rlEnableVertexAttribute(RL_DEFAULT_SHADER_ATTRIB_LOCATION_TEXCOORD);
+    rlEnableVertexAttribute(RL_DEFAULT_SHADER_ATTRIB_LOCATION_NORMAL);
 
     rlDisableVertexArray();
 }
@@ -120,10 +122,13 @@ inline void Quad::draw() const
         rlEnableVertexAttribute(RL_DEFAULT_SHADER_ATTRIB_LOCATION_TEXCOORD);
         rlSetVertexAttribute(RL_DEFAULT_SHADER_ATTRIB_LOCATION_TEXCOORD, 2, RL_FLOAT, 0, 0, 0);
 
+        rlEnableVertexAttribute(RL_DEFAULT_SHADER_ATTRIB_LOCATION_NORMAL);
+        rlSetVertexAttribute(RL_DEFAULT_SHADER_ATTRIB_LOCATION_NORMAL, 3, RL_FLOAT, 0, 0, 0);
+
         rlEnableVertexBufferElement(sEBO);
     }
 
-    rlDrawVertexArrayElements(0, 6, 0);
+    rlDrawVertexArrayElements(0, 36, 0);
 
     if (vao) {
         rlDisableVertexArray();
