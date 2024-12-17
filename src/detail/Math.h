@@ -35,16 +35,48 @@ namespace r3d {
  * This function retrieves the translation components (m12, m13, m14)
  * from the given transformation matrix and returns them as a 3D vector.
  * 
- * @param transform The transformation matrix from which to extract the translation part.
+ * @param mat The transformation matrix from which to extract the translation part.
  * @return Vector3 The extracted translation vector (x, y, z).
  */
-inline Vector3 getMatrixTrasnlation(const Matrix& transform)
+inline Vector3 getMatrixTrasnlation(const Matrix& mat)
 {
     return {
-        transform.m12,
-        transform.m13,
-        transform.m14
+        mat.m12,
+        mat.m13,
+        mat.m14
     };
+}
+
+/**
+ * @brief Extracts the scale components of a transformation matrix.
+ * 
+ * This function retrieves the scale factors along the X, Y, and Z axes
+ * from the given transformation matrix. It uses an approximation by
+ * summing the absolute values of the components of each axis vector.
+ * 
+ * Note: The correct formula for precise scale extraction would involve
+ * computing the Euclidean norm (length) of the axis vectors instead
+ * of summing their absolute values. This implementation provides a
+ * faster approximation.
+ * 
+ * @param mat The transformation matrix from which to extract the scale components.
+ * @return Vector3 The extracted scale vector (x, y, z).
+ */
+inline Vector3 getMatrixScale(const Matrix& mat)
+{
+    Vector3 scale;
+
+    // Quick approximation of the norm: sum of absolute values of the components.
+    scale.x = fabsf(mat.m0) + fabsf(mat.m1) + fabsf(mat.m2);
+    scale.y = fabsf(mat.m4) + fabsf(mat.m5) + fabsf(mat.m6);
+    scale.z = fabsf(mat.m8) + fabsf(mat.m9) + fabsf(mat.m10);
+
+    // The correct formula would be the following:
+    // scale.x = sqrtf(mat.m0 * mat.m0 + mat.m1 * mat.m1 + mat.m2 * mat.m2);
+    // scale.y = sqrtf(mat.m4 * mat.m4 + mat.m5 * mat.m5 + mat.m6 * mat.m6);
+    // scale.z = sqrtf(mat.m8 * mat.m8 + mat.m9 * mat.m9 + mat.m10 * mat.m10);
+
+    return scale;
 }
 
 /**
