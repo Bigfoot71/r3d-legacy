@@ -92,37 +92,37 @@ void R3D_Begin(Camera3D camera)
 
 void R3D_DrawModel(const R3D_Model* model)
 {
-    gRenderer->drawModel(*model, {}, {}, 0.0f, { 1.0f, 1.0f, 1.0f });
+    gRenderer->addModelToRenderQueue(*model, {}, {}, 0.0f, { 1.0f, 1.0f, 1.0f });
 }
 
 void R3D_DrawModelEx(const R3D_Model* model, Vector3 position, float scale)
 {
-    gRenderer->drawModel(*model, position, {}, 0.0f, { scale, scale, scale });
+    gRenderer->addModelToRenderQueue(*model, position, {}, 0.0f, { scale, scale, scale });
 }
 
 void R3D_DrawModelPro(const R3D_Model* model, Vector3 position, Vector3 rotationAxis, float rotationAngle, Vector3 scale)
 {
-    gRenderer->drawModel(*model, position, rotationAxis, rotationAngle, scale);
+    gRenderer->addModelToRenderQueue(*model, position, rotationAxis, rotationAngle, scale);
 }
 
 void R3D_DrawSprite(const R3D_Sprite* sprite)
 {
-    gRenderer->drawSprite(*sprite, { }, { }, 0.0f, { 1.0f, 1.0f });
+    gRenderer->addSpriteToRenderQueue(*sprite, { }, { }, 0.0f, { 1.0f, 1.0f });
 }
 
 void R3D_DrawSpriteEx(const R3D_Sprite* sprite, Vector3 position, float size)
 {
-    gRenderer->drawSprite(*sprite, position, { }, 0.0f, { size, size });
+    gRenderer->addSpriteToRenderQueue(*sprite, position, { }, 0.0f, { size, size });
 }
 
 void R3D_DrawSpritePro(const R3D_Sprite* sprite, Vector3 position, Vector3 rotationAxis, float rotationAngle, Vector2 size)
 {
-    gRenderer->drawSprite(*sprite, position, rotationAxis, rotationAngle, size);
+    gRenderer->addSpriteToRenderQueue(*sprite, position, rotationAxis, rotationAngle, size);
 }
 
 void R3D_DrawParticleSystemCPU(R3D_ParticleSystemCPU* system)
 {
-    gRenderer->drawParticleSystemCPU(*system);
+    gRenderer->addParticleSysCpuToRenderQueue(*system);
 }
 
 void R3D_End()

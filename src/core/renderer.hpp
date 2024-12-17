@@ -443,7 +443,7 @@ public:
      * @param rotationAngle The angle of rotation, in degrees.
      * @param scale The scale of the model.
      */
-    void drawModel(const R3D_Model& model, const Vector3& position, const Vector3& rotationAxis, float rotationAngle, const Vector3& scale);
+    void addModelToRenderQueue(const R3D_Model& model, const Vector3& position, const Vector3& rotationAxis, float rotationAngle, const Vector3& scale);
 
     /**
      * @brief Evaluates and queues a sprite for rendering based on visibility and rendering contexts.
@@ -459,7 +459,7 @@ public:
      * @param rotationAngle The angle of rotation, in degrees, around the specified rotation axis.
      * @param size The size of the sprite in world-space units (scaling the sprite based on this value).
      */
-    void drawSprite(const R3D_Sprite& sprite, const Vector3& position, const Vector3& rotationAxis, float rotationAngle, const Vector2& size);
+    void addSpriteToRenderQueue(const R3D_Sprite& sprite, const Vector3& position, const Vector3& rotationAxis, float rotationAngle, const Vector2& size);
 
     /**
      * @brief Renders the given particle system in the scene.
@@ -470,7 +470,7 @@ public:
      * 
      * @param system The particle system to be rendered.
      */
-    void drawParticleSystemCPU(R3D_ParticleSystemCPU& system);
+    void addParticleSysCpuToRenderQueue(R3D_ParticleSystemCPU& system);
 
     /**
      * @brief Executes the rendering of all queued surfaces and presents the final frame to the display.
@@ -805,7 +805,7 @@ inline void Renderer::setCamera(const Camera3D& camera)
     }
 }
 
-inline void Renderer::drawModel(const R3D_Model& model, const Vector3& position, const Vector3& rotationAxis, float rotationAngle, const Vector3& scale)
+inline void Renderer::addModelToRenderQueue(const R3D_Model& model, const Vector3& position, const Vector3& rotationAxis, float rotationAngle, const Vector3& scale)
 {
     const std::vector<R3D_Surface>& surfaces = static_cast<Model*>(model.internal)->surfaces;
 
@@ -931,7 +931,7 @@ inline void Renderer::drawModel(const R3D_Model& model, const Vector3& position,
     }
 }
 
-inline void Renderer::drawSprite(const R3D_Sprite& sprite, const Vector3& position, const Vector3& rotationAxis, float rotationAngle, const Vector2& size)
+inline void Renderer::addSpriteToRenderQueue(const R3D_Sprite& sprite, const Vector3& position, const Vector3& rotationAxis, float rotationAngle, const Vector2& size)
 {
     // Computes the sprite's transformation matrix using the provided parameters,
     // the transformation assigned to the sprite, any parent transformations if present,
@@ -1050,7 +1050,7 @@ inline void Renderer::drawSprite(const R3D_Sprite& sprite, const Vector3& positi
     }
 }
 
-inline void Renderer::drawParticleSystemCPU(R3D_ParticleSystemCPU& system)
+inline void Renderer::addParticleSysCpuToRenderQueue(R3D_ParticleSystemCPU& system)
 {
     // Computes the system's transformation matrix using the provided parameters,
     // the transformation assigned to the system, any parent transformations if present,
