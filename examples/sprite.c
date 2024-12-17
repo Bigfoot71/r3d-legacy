@@ -51,6 +51,7 @@ int main(void)
         EndDrawing();
     }
 
+    R3D_UnloadSkybox(&sky);
     R3D_Close();
 
     UnloadTexture(texSprite);
