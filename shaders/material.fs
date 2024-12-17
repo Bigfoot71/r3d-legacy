@@ -255,10 +255,10 @@ vec3 RotateWithQuat(vec3 v, vec4 q)
 
 void main()
 {
-    vec3 albedo = texture(uTexAlbedo, vTexCoord).rgb * uColAlbedo.rgb;
+    vec4 albedo = texture(uTexAlbedo, vTexCoord) * uColAlbedo;
 
     #ifdef VERTEX_COLOR
-        albedo *= vColor.rgb;
+        albedo *= vColor;
     #endif
 
     float roughness = uValRoughness * texture(uTexRoughness, vTexCoord).g;
@@ -266,7 +266,7 @@ void main()
 
     /* Compute F0 (reflectance at normal incidence) based on the metallic factor */
 
-    vec3 F0 = ComputeF0(metalness, 0.5, albedo);
+    vec3 F0 = ComputeF0(metalness, 0.5, albedo.rgb);
 
     /* Compute view direction and normal */
 
@@ -512,7 +512,7 @@ void main()
 
     /* Compute the final diffuse color, including ambient and diffuse lighting contributions */
 
-    diffuse = albedo * (ambient + diffuse);
+    diffuse = albedo.rgb * (ambient + diffuse);
 
     /* Compute emission color; if an emissive map is used, sample it */
 
@@ -527,7 +527,7 @@ void main()
 
     /* Compute the final fragment color by combining diffuse, specular, and emission contributions */
 
-    FragColor = vec4(diffuse + specular + emission, 1.0);
+    FragColor = vec4(diffuse + specular + emission, albedo.a);
 
     /* Handle bright colors for bloom / bloom */
 
