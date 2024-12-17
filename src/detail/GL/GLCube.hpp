@@ -29,6 +29,8 @@ class GLCube
 public:
     GLCube();
     ~GLCube();
+    GLuint vao() const;
+    GLuint vbo() const;
     void draw() const;
 
 private:
@@ -112,6 +114,16 @@ inline GLCube::~GLCube()
         glDeleteBuffers(1, &sVBO);
         glDeleteVertexArrays(1, &sVAO);
     }
+}
+
+inline GLuint GLCube::vao() const
+{
+    return sVAO;
+}
+
+inline GLuint GLCube::vbo() const
+{
+    return sVBO;
 }
 
 inline void GLCube::draw() const

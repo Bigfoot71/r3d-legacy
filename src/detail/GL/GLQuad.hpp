@@ -29,6 +29,8 @@ class GLQuad
 public:
     GLQuad();
     ~GLQuad();
+    GLuint vao() const;
+    GLuint vbo() const;
     void draw() const;
 
 private:
@@ -75,6 +77,16 @@ inline GLQuad::~GLQuad()
         glDeleteBuffers(1, &sVBO);
         glDeleteVertexArrays(1, &sVAO);
     }
+}
+
+inline GLuint GLQuad::vao() const
+{
+    return sVAO;
+}
+
+inline GLuint GLQuad::vbo() const
+{
+    return sVBO;
 }
 
 inline void GLQuad::draw() const
