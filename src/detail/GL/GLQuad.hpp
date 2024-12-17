@@ -27,45 +27,62 @@ namespace r3d {
 class GLQuad
 {
 public:
-    GLQuad() {
-        constexpr float VERTICES[] =
-        {
-            // Positions         Texcoords
-            -1.0f,  1.0f, 0.0f,   0.0f, 1.0f,
-            -1.0f, -1.0f, 0.0f,   0.0f, 0.0f,
-            1.0f,  1.0f, 0.0f,   1.0f, 1.0f,
-            1.0f, -1.0f, 0.0f,   1.0f, 0.0f,
-        };
-
-        glGenVertexArrays(1, &mVAO);
-        glBindVertexArray(mVAO);
-
-        glGenBuffers(1, &mVBO);
-        glBindBuffer(GL_ARRAY_BUFFER, mVBO);
-        glBufferData(GL_ARRAY_BUFFER, sizeof(VERTICES), &VERTICES, GL_STATIC_DRAW);
-
-        glEnableVertexAttribArray(0);
-        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5*sizeof(float), (void *)0); // Positions
-
-        glEnableVertexAttribArray(1);
-        glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5*sizeof(float), (void *)(3*sizeof(float))); // Texcoords
-    }
-
-    ~GLQuad() {
-        glDeleteBuffers(1, &mVBO);
-        glDeleteVertexArrays(1, &mVAO);
-    }
-
-    void draw() const {
-        glBindVertexArray(mVAO);
-        glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
-        glBindVertexArray(0);
-    }
+    GLQuad();
+    ~GLQuad();
+    void draw() const;
 
 private:
-    GLuint mVAO = 0;
-    GLuint mVBO = 0;
+    static inline GLuint sVAO = 0;
+    static inline GLuint sVBO = 0;
+    static inline int sCounter = 0;
+
+private:
+    static constexpr float VERTICES[] =
+    {
+        // Positions         Texcoords
+        -1.0f,  1.0f, 0.0f,   0.0f, 1.0f,
+        -1.0f, -1.0f, 0.0f,   0.0f, 0.0f,
+        1.0f,  1.0f, 0.0f,   1.0f, 1.0f,
+        1.0f, -1.0f, 0.0f,   1.0f, 0.0f,
+    };
 };
+
+/* Implementation */
+
+inline GLQuad::GLQuad()
+{
+    if (sCounter++ > 0) {
+        return;
+    }
+
+    glGenVertexArrays(1, &sVAO);
+    glBindVertexArray(sVAO);
+
+    glGenBuffers(1, &sVBO);
+    glBindBuffer(GL_ARRAY_BUFFER, sVBO);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(VERTICES), &VERTICES, GL_STATIC_DRAW);
+
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5*sizeof(float), (void *)0); // Positions
+
+    glEnableVertexAttribArray(1);
+    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5*sizeof(float), (void *)(3*sizeof(float))); // Texcoords
+}
+
+inline GLQuad::~GLQuad()
+{
+    if (--sCounter == 0) {
+        glDeleteBuffers(1, &sVBO);
+        glDeleteVertexArrays(1, &sVAO);
+    }
+}
+
+inline void GLQuad::draw() const
+{
+    glBindVertexArray(sVAO);
+    glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+    glBindVertexArray(0);
+}
 
 } // namespace r3d
 
