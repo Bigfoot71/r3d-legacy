@@ -44,12 +44,12 @@
 #include "../objects/model.hpp"
 #include "./lighting.hpp"
 
-#include <algorithm>
 #include <raylib.h>
 #include <raymath.h>
 #include <rlgl.h>
 
 #include <unordered_map>
+#include <algorithm>
 #include <cstdint>
 #include <variant>
 #include <vector>
@@ -69,9 +69,6 @@ namespace r3d {
 
 /**
  * @brief Stores a draw call for rendering in shadow maps.
- * 
- * This class encapsulates a draw call, which can either be a mesh, sprite, or particle system, for rendering in shadow maps.
- * The draw call is evaluated and executed to render the object in the shadow map from the perspective of a light source.
  */
 class DrawCall_Shadow
 {
@@ -79,32 +76,24 @@ public:
     /**
      * @struct Surface
      * @brief Structure representing a surface to be rendered.
-     * 
-     * This structure contains the mesh and its associated transformation matrix for rendering.
      */
     struct Surface {
-        const Mesh *mesh;           ///< Pointer to the surface mesh to be rendered.
-        const Matrix transform;     ///< Transformation matrix for the draw call.
+        const Mesh *mesh;           ///< Pointer to the surface mesh.
+        const Matrix transform;     ///< Transformation matrix for the mesh.
     };
 
     /**
      * @struct Sprite
      * @brief Structure representing a sprite to be rendered.
-     * 
-     * This structure contains the sprite and its associated transformation matrix for rendering in shadow maps.
-     * The sprite is treated similarly to a mesh in terms of transformation, but it may also include special handling 
-     * for billboard rendering and animation.
      */
     struct Sprite {
-        const R3D_Sprite *sprite;   ///< Pointer to the sprite to be rendered.
+        const R3D_Sprite *sprite;   ///< Pointer to the sprite.
         const Matrix transform;     ///< Transformation matrix for the sprite.
     };
 
     /**
      * @struct ParticlesCPU
      * @brief Structure representing a particle system to be rendered.
-     * 
-     * This structure contains a pointer to the particle system to be rendered.
      */
     struct ParticlesCPU {
         const R3D_ParticleSystemCPU *system; ///< Pointer to the particle system.
@@ -113,85 +102,46 @@ public:
 public:
     /**
      * @brief Constructs a draw call for a mesh.
-     * 
-     * This constructor creates a draw call for rendering a mesh in the shadow map.
-     * 
-     * @param mesh The mesh to be rendered.
-     * @param transform The transformation matrix for the mesh.
      */
     DrawCall_Shadow(const Mesh* mesh, const Matrix& transform);
 
     /**
      * @brief Constructs a draw call for a sprite.
-     * 
-     * This constructor creates a draw call for rendering a sprite in the shadow map.
-     * The sprite's transformations (position, rotation, scale) will be applied, and its properties will be taken into account 
-     * when generating the shadow.
-     * 
-     * @param sprite The sprite to be rendered.
-     * @param transform The transformation matrix for the sprite.
      */
     DrawCall_Shadow(const R3D_Sprite* sprite, const Matrix& transform);
 
     /**
      * @brief Constructs a draw call for a particle system.
-     * 
-     * This constructor creates a draw call for rendering a particle system in the shadow map.
-     * 
-     * @param system The particle system to be rendered.
      */
     DrawCall_Shadow(const R3D_ParticleSystemCPU* system);
 
     /**
-     * @brief Draws the object (either mesh, sprite, or particle system) for shadow mapping.
-     * 
-     * This method determines which type of object to render (mesh, sprite, or particle system) and calls the appropriate 
-     * draw function for shadow mapping.
-     * 
-     * @param light The light source used for shadow mapping.
+     * @brief Draws the object (mesh, sprite, or particle system) for shadow mapping.
      */
     void draw(const Light& light) const;
 
 private:
     /**
      * @brief Draws the mesh for shadow mapping.
-     * 
-     * This method handles rendering the mesh in the shadow map from the perspective of the specified light source.
-     * 
-     * @param light The light source used for shadow mapping.
      */
     void drawMesh(const Light& light) const;
 
     /**
      * @brief Draws the sprite for shadow mapping.
-     * 
-     * This method handles rendering the sprite in the shadow map. The sprite will be treated similarly to a mesh,
-     * with its transformation applied. Special consideration is given to the sprite's properties, such as its billboard mode 
-     * and animation, for accurate shadow rendering.
-     * 
-     * @param light The light source used for shadow mapping.
      */
     void drawSprite(const Light& light) const;
 
     /**
      * @brief Draws the particle system for shadow mapping.
-     * 
-     * This method handles rendering the particle system in the shadow map. Each particle in the system will be rendered 
-     * in the shadow map with appropriate transformations and lighting interactions.
-     * 
-     * @param light The light source used for shadow mapping.
      */
     void drawParticlesCPU(const Light& light) const;
 
 private:
-    std::variant<Surface, Sprite, ParticlesCPU> mCall; ///< The variant type that holds either a surface (mesh), sprite, or particle system for rendering.
+    std::variant<Surface, Sprite, ParticlesCPU> mCall; ///< Holds either a surface, sprite, or particle system.
 };
 
 /**
  * @brief Stores a draw call for rendering in the main scene.
- * 
- * This class encapsulates a draw call, which can either be a mesh, sprite, or particle system, for rendering in the main scene.
- * It includes the necessary information for applying light influences, material properties, and transformations to render objects in the scene.
  */
 class DrawCall_Scene
 {
@@ -199,14 +149,11 @@ public:
     /**
      * @struct Surface
      * @brief Structure representing a surface to be rendered in the scene.
-     * 
-     * This structure contains the mesh, material, transformation matrix, and light influences for rendering.
-     * It represents a surface (such as a 3D model) that is drawn with a specified material and influenced by the scene's lights.
      */
     struct Surface {
         struct {
             const Mesh *mesh;           ///< Pointer to the mesh to be rendered.
-            R3D_Material material;      ///< Material copy for rendering the same mesh with different parameters.
+            R3D_Material material;      ///< Material copy for rendering with different parameters.
         } surface;                      ///< Surface information for the draw call.
         ShaderLightArray lights;        ///< Array of light pointers influencing this draw call.
         Matrix transform;               ///< Transformation matrix for the draw call.
@@ -215,9 +162,6 @@ public:
     /**
      * @struct Sprite
      * @brief Structure representing a sprite to be rendered in the scene.
-     * 
-     * This structure contains the sprite, material properties, transformation matrix, and light influences for rendering.
-     * Sprites are rendered as 2D objects in the 3D scene, and may include special features such as animation or billboard behavior.
      */
     struct Sprite {
         const R3D_Sprite *sprite;       ///< Pointer to the sprite to be rendered.
@@ -228,9 +172,6 @@ public:
     /**
      * @struct ParticlesCPU
      * @brief Structure representing a particle system to be rendered in the scene.
-     * 
-     * This structure contains the particle system and light influences for rendering.
-     * Particle systems allow for rendering dynamic, animated objects that can interact with lights in the scene.
      */
     struct ParticlesCPU {
         R3D_ParticleSystemCPU *system;   ///< Pointer to the particle system to be rendered.
@@ -240,94 +181,48 @@ public:
 public:
     /**
      * @brief Constructs a draw call for a surface to be rendered in the scene.
-     * 
-     * This constructor creates a draw call for rendering a mesh (surface) in the scene with the provided material, transformation, 
-     * and light influences.
-     * 
-     * @param surface The surface (mesh) to be rendered.
-     * @param transform The transformation matrix for the surface.
-     * @param lights The array of lights influencing this draw call.
      */
     DrawCall_Scene(const R3D_Surface& surface, const Matrix& transform, const ShaderLightArray& lights);
 
     /**
      * @brief Constructs a draw call for a sprite to be rendered in the scene.
-     * 
-     * This constructor creates a draw call for rendering a sprite in the scene. The sprite will be transformed and affected 
-     * by the provided lights. Special rendering properties, such as animation or billboard behavior, are handled.
-     * 
-     * @param sprite The sprite to be rendered.
-     * @param transform The transformation matrix for the sprite.
-     * @param lights The array of lights influencing the sprite.
      */
     DrawCall_Scene(const R3D_Sprite* sprite, const Matrix& transform, const ShaderLightArray& lights);
 
     /**
      * @brief Constructs a draw call for a particle system to be rendered in the scene.
-     * 
-     * This constructor creates a draw call for rendering a particle system in the scene, with the provided light influences 
-     * that will affect how the particles are lit.
-     * 
-     * @param system The particle system to be rendered.
-     * @param lights The array of lights influencing the particle system.
      */
     DrawCall_Scene(R3D_ParticleSystemCPU* system, const ShaderLightArray& lights);
 
     /**
      * @brief Executes the draw call using the provided shader material.
-     * 
-     * This method performs the actual rendering of the object (mesh, sprite, or particle system) in the scene using the provided 
-     * shader material, applying light and material properties to produce the final visual result.
-     * 
-     * @param shader The shader material to use for rendering.
      */
     void draw(ShaderMaterial& shader) const;
 
     /**
      * @brief Retrieves the transformation matrix of the surface, if applicable.
-     *
-     * This method returns the transformation matrix of the object represented by the draw call
-     * if it has one, otherwise the function will return `nullptr` if the underlying object does not
-     * have a direct transformation, as is the case for particle systems, for example.
-     *
-     * @return A pointer to the transformation matrix if the draw call object has one, otherwise, `nullptr`.
+     * @return Returns `nullptr` if the underlying object does not have a direct transformation.
      */
     const Matrix* getTransform() const;
 
 private:
     /**
      * @brief Draws the mesh for this draw call using the shader material.
-     * 
-     * This method handles the rendering of the mesh in the scene, applying the material properties, transformation, 
-     * and light influences during the drawing process.
-     * 
-     * @param shader The shader material to use for rendering the mesh.
      */
     void drawMesh(ShaderMaterial& shader) const;
 
     /**
      * @brief Draws the sprite for this draw call using the shader material.
-     * 
-     * This method handles the rendering of the sprite in the scene. The sprite's transformation, material properties, 
-     * and light influences will be applied during the drawing process. Special rendering features such as animation 
-     * or billboard behavior are also taken into account.
-     * 
-     * @param shader The shader material to use for rendering the sprite.
      */
     void drawSprite(ShaderMaterial& shader) const;
 
     /**
      * @brief Draws the particle system for this draw call using the shader material.
-     * 
-     * This method handles the rendering of the particle system in the scene, applying the material properties and light 
-     * influences to render the dynamic particles.
-     * 
-     * @param shader The shader material to use for rendering the particle system.
      */
     void drawParticlesCPU(ShaderMaterial& shader) const;
 
 private:
-    std::variant<Surface, Sprite, ParticlesCPU> mCall; ///< The variant type that holds either a surface (mesh), sprite, or particle system for rendering in the scene.
+    std::variant<Surface, Sprite, ParticlesCPU> mCall; ///< Holds either a surface (mesh), sprite, or particle system for rendering in the scene.
 };
 
 /**
