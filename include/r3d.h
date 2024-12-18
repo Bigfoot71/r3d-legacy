@@ -702,6 +702,28 @@ R3D_DepthSortingOrder R3D_GetDepthSortingOrder(void);
 void R3D_SetRenderTarget(const RenderTexture* target);
 
 /**
+ * @brief Sets the frequency at which shadow maps are updated.
+ *
+ * This function allows you to specify how many times per second the shadow maps should be updated.
+ * The default frequency is 30 updates per second. You can set the frequency to '0' to disable
+ * the frequency control, and the shadow maps will be updated continuously.
+ *
+ * @param frequency The frequency (in updates per second) at which the shadow maps should be updated.
+ *                  Set to 0 to disable frequency control.
+ */
+void R3D_SetShadowsUpdateFrequency(int frequency);
+
+/**
+ * @brief Gets the current frequency of shadow map updates.
+ *
+ * This function returns the number of times per second that shadow maps are updated. 
+ * If the frequency control is disabled, it will return 0.
+ *
+ * @return The frequency (in updates per second) at which shadow maps are currently updated.
+ */
+int R3D_GetShadowsUpdateFrequency(void);
+
+/**
  * @brief Sets the active layers to be rendered.
  *
  * This function assigns a set of layers (`R3D_Layer`) to be rendered. The layers are specified

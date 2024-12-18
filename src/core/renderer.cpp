@@ -85,6 +85,17 @@ void R3D_SetRenderTarget(const RenderTexture* target)
     gRenderer->customRenderTarget = target;
 }
 
+void R3D_SetShadowsUpdateFrequency(int frequency)
+{
+    gRenderer->shadowsUpdateFrequency = (frequency > 0) ? 1.0f / frequency : 0;
+}
+
+int R3D_GetShadowsUpdateFrequency(void)
+{
+    return (gRenderer->shadowsUpdateFrequency > 0)
+        ? 1.0f / gRenderer->shadowsUpdateFrequency : 0;
+}
+
 void R3D_SetActiveLayers(int layers)
 {
     gRenderer->activeLayers = layers;
@@ -115,6 +126,7 @@ void R3D_ToggleActiveLayer(R3D_Layer layer)
 void R3D_Begin(Camera3D camera)
 {
     gRenderer->setCamera(camera);
+    gRenderer->shadowsUpdateTimer += GetFrameTime();
 }
 
 void R3D_DrawModel(const R3D_Model* model)
@@ -140,7 +152,7 @@ void R3D_DrawModelPro(const R3D_Model* model, Vector3 position, Vector3 rotation
         r3d::ShaderLightArray lightArray{};
         gRenderer->setupLightsAndShadows(*model, aabb, transform, &lightArray);
         gRenderer->addObjectToSceneBatch(*model, transform, lightArray);
-    } else {
+    } else if (gRenderer->shadowsUpdateTimer >= gRenderer->shadowsUpdateFrequency) {
         gRenderer->setupLightsAndShadows(*model, aabb, transform, nullptr);
     }
 }
@@ -171,7 +183,7 @@ void R3D_DrawSpritePro(const R3D_Sprite* sprite, Vector3 position, Vector3 rotat
         r3d::ShaderLightArray lightArray{};
         gRenderer->setupLightsAndShadows(*sprite, aabb, transform, &lightArray);
         gRenderer->addObjectToSceneBatch(*sprite, transform, lightArray);
-    } else {
+    } else if (gRenderer->shadowsUpdateTimer >= gRenderer->shadowsUpdateFrequency) {
         gRenderer->setupLightsAndShadows(*sprite, aabb, transform, nullptr);
     }
 }
@@ -184,7 +196,7 @@ void R3D_DrawParticleSystemCPU(R3D_ParticleSystemCPU* system)
         r3d::ShaderLightArray lightArray{};
         gRenderer->setupLightsAndShadows(*system, system->aabb, transform, &lightArray);
         gRenderer->addObjectToSceneBatch(*system, transform, lightArray);
-    } else {
+    } else if (gRenderer->shadowsUpdateTimer >= gRenderer->shadowsUpdateFrequency) {
         gRenderer->setupLightsAndShadows(*system, system->aabb, transform, nullptr);
     }
 }
@@ -194,7 +206,11 @@ void R3D_End()
     rlDrawRenderBatchActive();
     rlEnableDepthTest();
 
-    gRenderer->renderShadowPass();
+    if (gRenderer->shadowsUpdateTimer >= gRenderer->shadowsUpdateFrequency) {
+        gRenderer->shadowsUpdateTimer = 0.0f;
+        gRenderer->renderShadowPass();
+    }
+
     gRenderer->renderScenePass();
 
     rlDisableDepthTest();

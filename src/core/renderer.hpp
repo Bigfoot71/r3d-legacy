@@ -275,6 +275,8 @@ public:
     R3D_Environment environment;                ///< Environment settings for the renderer.
     const RenderTexture *customRenderTarget;    ///< Custom raylib render target to which the blit is performed instead of the main framebuffer.
     R3D_DepthSortingOrder depthSortingOrder;    ///< Specifies the deoth sorting order of surfaces before rendering.
+    float shadowsUpdateFrequency;               ///< Reciprocal of the number of shadow map updates per second.  
+    float shadowsUpdateTimer;                   ///< Timer used to control the frequency of shadow map updates.
     int activeLayers;                           ///< `R3D_Layer` that are active.
 
     int flags;  /**< Copies of the flags assigned during initialization,
@@ -567,6 +569,8 @@ inline Renderer::Renderer(int internalWidth, int internalHeight, int flags)
     })
     , customRenderTarget(nullptr)
     , depthSortingOrder(R3D_DEPTH_SORT_DISABLED)
+    , shadowsUpdateFrequency(1.0f / 30)
+    , shadowsUpdateTimer(1.0f / 30)
     , activeLayers(R3D_LAYER_1)
     , flags(flags)
     , mTargetScene(mInternalWidth, mInternalHeight)
@@ -739,6 +743,13 @@ inline void Renderer::setupLightsAndShadows(const Object& object, const Bounding
         return;
     }
 
+    bool shadow = (object.shadow != R3D_CAST_OFF)
+        && (shadowsUpdateTimer >= shadowsUpdateFrequency);
+
+    if (!shadow && lightArray == nullptr) {
+        return;
+    }
+
     int lightCount = 0;
 
     for (const auto& [id, light] : mLights) {
@@ -772,21 +783,15 @@ inline void Renderer::setupLightsAndShadows(const Object& object, const Bounding
 
         // Here, if the light casts shadows, we add the object to its set of objects for rendering in its shadow map
 
-        if (light.shadow) {
+        if (shadow && light.shadow) {
             if constexpr (std::is_same_v<Object, R3D_Model>) {
-                if (light.shadow && object.shadow != R3D_CAST_OFF) {
-                    for (const auto& surface : static_cast<Model*>(object.internal)->surfaces) {
-                        mShadowBatches.pushDrawCall(id, DrawCall_Shadow(&surface.mesh, globalTransform));
-                    }
+                for (const auto& surface : static_cast<Model*>(object.internal)->surfaces) {
+                    mShadowBatches.pushDrawCall(id, DrawCall_Shadow(&surface.mesh, globalTransform));
                 }
             } else if constexpr (std::is_same_v<Object, R3D_Sprite>) {
-                if (light.shadow && object.shadow != R3D_CAST_OFF) {
-                    mShadowBatches.pushDrawCall(id, DrawCall_Shadow(&object, globalTransform));
-                }
+                mShadowBatches.pushDrawCall(id, DrawCall_Shadow(&object, globalTransform));
             } else if constexpr (std::is_same_v<Object, R3D_ParticleSystemCPU>) {
-                if (light.shadow && object.shadow != R3D_CAST_OFF) {
-                    mShadowBatches.pushDrawCall(id, DrawCall_Shadow(&object));
-                }
+                mShadowBatches.pushDrawCall(id, DrawCall_Shadow(&object));
             }
         }
 
