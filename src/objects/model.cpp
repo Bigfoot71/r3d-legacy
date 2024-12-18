@@ -82,6 +82,7 @@ R3D_Model R3D_LoadModel(const char* fileName)
         .aabb = {},
         .shadow = R3D_CAST_ON,
         .billboard = R3D_BILLBOARD_DISABLED,
+        .layer = R3D_LAYER_0,
         .internal = r3dModel,
     };
 
@@ -104,6 +105,7 @@ R3D_Model R3D_LoadModelFromMesh(Mesh mesh)
         .aabb = {},
         .shadow = R3D_CAST_ON,
         .billboard = R3D_BILLBOARD_DISABLED,
+        .layer = R3D_LAYER_0,
         .internal = r3dModel,
     };
 

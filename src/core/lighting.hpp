@@ -55,6 +55,7 @@ struct Light
     bool shadow;                     ///< Flag indicating whether the light casts shadows.
     bool enabled;                    ///< Flag indicating whether the light is active.
     R3D_LightType type;              ///< Type of the light (e.g., directional, point, spotlight).
+    int layers;                      ///< Represents the layers (`R3D_Layer`) in which the light illuminates
 
     /**
      * @brief Constructs a light of the specified type.
@@ -125,6 +126,7 @@ inline Light::Light(R3D_LightType type, int shadowMapResolution)
     , shadow(shadowMapResolution > 0)
     , enabled(false)
     , type(type)
+    , layers(R3D_LAYER_0)
 {
     if (shadow) {
         enableShadow(shadowMapResolution);

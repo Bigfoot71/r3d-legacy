@@ -206,3 +206,30 @@ void R3D_SetLightType(R3D_Light light, R3D_LightType type)
 {
     gRenderer->getLight(light).type = type;
 }
+
+void R3D_SetLightLayers(R3D_Light light, int layers)
+{
+    gRenderer->getLight(light).layers = layers;
+}
+
+int R3D_GetLightLayers(R3D_Light light)
+{
+    return gRenderer->getLight(light).layers;
+}
+
+void R3D_AddLightLayer(R3D_Light light, R3D_Layer layer)
+{
+    gRenderer->getLight(light).layers |= layer;
+}
+
+void R3D_RemoveLightLayer(R3D_Light light, R3D_Layer layer)
+{
+    gRenderer->getLight(light).layers &= ~layer;
+}
+
+void R3D_ToggleLightLayer(R3D_Light light, R3D_Layer layer)
+{
+    auto& l = gRenderer->getLight(light);
+    if (l.layers & layer) l.layers &= ~layer;
+    else l.layers |= layer;
+}

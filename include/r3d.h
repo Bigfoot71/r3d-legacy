@@ -237,6 +237,18 @@ typedef enum {
     R3D_OMNILIGHT            /**< Omnidirectional light, emitting light in all directions from a single point. */
 } R3D_LightType;
 
+typedef enum {
+    R3D_LAYER_0 = 1 << 0,
+    R3D_LAYER_1 = 1 << 1,
+    R3D_LAYER_2 = 1 << 2,
+    R3D_LAYER_3 = 1 << 3,
+    R3D_LAYER_4 = 1 << 4,
+    R3D_LAYER_5 = 1 << 5,
+    R3D_LAYER_6 = 1 << 6,
+    R3D_LAYER_7 = 1 << 7,
+    R3D_LAYER_8 = 1 << 8,
+    R3D_LAYER_9 = 1 << 9
+} R3D_Layer;
 
 /* Structs */
 
@@ -405,11 +417,12 @@ typedef struct {
  * It can also include additional internal data for rendering optimizations.
  */
 typedef struct {
-    R3D_Transform transform;         /**< Transform defining the position, rotation, and scale of the model. */
-    BoundingBox aabb;                /**< Axis-aligned bounding box (AABB) for the model. Used for culling and spatial queries. */
-    R3D_CastShadow shadow;           /**< Shadow casting behavior of the model (see `R3D_CastShadow`). */
-    R3D_BillboardMode billboard;     /**< Indicates whether the model should be rendered as a billboard. */
-    void *internal;                  /**< Internal data used by the rendering engine. Should not be modified directly. */
+    R3D_Transform transform;        /**< Transform defining the position, rotation, and scale of the model. */
+    BoundingBox aabb;               /**< Axis-aligned bounding box (AABB) for the model. Used for culling and spatial queries. */
+    R3D_CastShadow shadow;          /**< Shadow casting behavior of the model (see `R3D_CastShadow`). */
+    R3D_BillboardMode billboard;    /**< Indicates whether the model should be rendered as a billboard. */
+    R3D_Layer layer;                /**< Indicates the layer in which the model should be rendered */
+    void *internal;                 /**< Internal data used by the rendering engine. Should not be modified directly. */
 } R3D_Model;
 
 /**
@@ -433,6 +446,7 @@ typedef struct {
 
     R3D_CastShadow shadow;          /**< The shadow-casting mode for the sprite. Determines whether and how the sprite casts shadows. */
     R3D_BillboardMode billboard;    /**< The billboard mode for the sprite, specifying how it faces the camera. */
+    R3D_Layer layer;                /**< Indicates the layer in which the sprite should be rendered */
 
 } R3D_Sprite;
 
@@ -531,8 +545,9 @@ typedef struct {
 
     BoundingBox aabb;               /**< The bounding box of the particle system. Default: ((-10, -10, -10), (10, 10, 10)). */
 
-    R3D_CastShadow shadow;           /**< The shadow casting mode for the particle system. Default: R3D_CAST_OFF. */
-    R3D_BillboardMode billboard;     /**< Indicates whether particles should be rendered as billboards. Default: R3D_BILLBOARD_ENABLED */
+    R3D_CastShadow shadow;          /**< The shadow casting mode for the particle system. Default: R3D_CAST_OFF. */
+    R3D_BillboardMode billboard;    /**< Indicates whether particles should be rendered as billboards. Default: R3D_BILLBOARD_ENABLED */
+    R3D_Layer layer;                /**< Indicates the layer in which the particle system should be rendered */
 
     bool autoEmission;               /**< Indicates whether particle emission is automatic when calling `R3D_UpdateEmitterParticleCPU`.
                                       *   If false, emission is manual using `R3D_EmitParticleCPU`. Default: true.
@@ -678,6 +693,55 @@ R3D_DepthSortingOrder R3D_GetDepthSortingOrder(void);
  * @note If `target` is `NULL`, the rendering will be directed back to the main framebuffer.
  */
 void R3D_SetRenderTarget(const RenderTexture* target);
+
+/**
+ * @brief Sets the active layers to be rendered.
+ *
+ * This function assigns a set of layers (`R3D_Layer`) to be rendered. The layers are specified
+ * by the `layers` bitmask, which determines which layers will be rendered in the scene.
+ *
+ * @param layers A bitmask representing the layers (`R3D_Layer`) that should be rendered.
+ */
+void R3D_SetActiveLayers(int layers);
+
+/**
+ * @brief Gets the active layers currently set for rendering.
+ *
+ * This function retrieves the bitmask representing the layers (`R3D_Layer`) that are currently active
+ * and will be rendered in the scene.
+ *
+ * @return An integer representing the bitmask of active layers (`R3D_Layer`) to be rendered.
+ */
+int R3D_GetActiveLayers();
+
+/**
+ * @brief Adds a specific layer to the active layers for rendering.
+ *
+ * This function adds a specific layer (`R3D_Layer`) to the set of active layers that will be rendered.
+ *
+ * @param layer The layer (`R3D_Layer`) to be added to the active layers.
+ */
+void R3D_AddActiveLayer(R3D_Layer layer);
+
+/**
+ * @brief Removes a specific layer from the active layers for rendering.
+ *
+ * This function removes a specific layer (`R3D_Layer`) from the set of active layers that will be rendered.
+ *
+ * @param layer The layer (`R3D_Layer`) to be removed from the active layers.
+ */
+void R3D_RemoveActiveLayer(R3D_Layer layer);
+
+/**
+ * @brief Toggles a specific layer in the active layers for rendering.
+ *
+ * This function toggles the state of a specific layer (`R3D_Layer`) in the set of active layers. 
+ * If the layer is currently active, it will be removed from the active layers. 
+ * If the layer is inactive, it will be added to the active layers.
+ *
+ * @param layer The layer (`R3D_Layer`) to be toggled in the active layers.
+ */
+void R3D_ToggleActiveLayer(R3D_Layer layer);
 
 /**
  * @brief Begins a new rendering frame using the R3D engine with the specified camera.
@@ -1632,6 +1696,58 @@ R3D_LightType R3D_GetLightType(R3D_Light light);
  */
 void R3D_SetLightType(R3D_Light light, R3D_LightType type);
 
+/**
+ * @brief Sets the layers in which the light illuminates.
+ *
+ * This function assigns a set of layers (`R3D_Layer`) to a light (`R3D_Light`). The light will only illuminate
+ * the layers specified in the `layers` parameter.
+ *
+ * @param light The light for which the layers are being set.
+ * @param layers A bitmask representing the layers (`R3D_Layer`) in which the light will illuminate.
+ */
+void R3D_SetLightLayers(R3D_Light light, int layers);
+
+/**
+ * @brief Gets the layers in which the light illuminates.
+ *
+ * This function retrieves the bitmask representing the layers (`R3D_Layer`) that the light illuminates.
+ *
+ * @param light The light for which the layers are being retrieved.
+ * @return An integer representing the bitmask of active layers (`R3D_Layer`) that the light illuminates.
+ */
+int R3D_GetLightLayers(R3D_Light light);
+
+/**
+ * @brief Adds a specific layer to the light's illumination.
+ *
+ * This function adds a specific layer (`R3D_Layer`) to the set of layers in which the light illuminates.
+ *
+ * @param light The light to which the layer is being added.
+ * @param layer The layer (`R3D_Layer`) to be added to the light's illumination set.
+ */
+void R3D_AddLightLayer(R3D_Light light, R3D_Layer layer);
+
+/**
+ * @brief Removes a specific layer from the light's illumination.
+ *
+ * This function removes a specific layer (`R3D_Layer`) from the set of layers in which the light illuminates.
+ *
+ * @param light The light from which the layer is being removed.
+ * @param layer The layer (`R3D_Layer`) to be removed from the light's illumination set.
+ */
+void R3D_RemoveLightLayer(R3D_Light light, R3D_Layer layer);
+
+/**
+ * @brief Toggles a specific layer in the light's illumination.
+ *
+ * This function toggles the state of a specific layer (`R3D_Layer`) in the set of layers that the light illuminates. 
+ * If the layer is currently illuminated by the light, it will be removed from the light's illumination set.
+ * If the layer is not currently illuminated by the light, it will be added to the light's illumination set.
+ *
+ * @param light The light whose illumination layers are being toggled.
+ * @param layer The layer (`R3D_Layer`) to be toggled in the light's illumination set.
+ */
+void R3D_ToggleLightLayer(R3D_Light light, R3D_Layer layer);
 
 
 /* [Core] - Debug functions */

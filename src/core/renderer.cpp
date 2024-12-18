@@ -85,6 +85,33 @@ void R3D_SetRenderTarget(const RenderTexture* target)
     gRenderer->customRenderTarget = target;
 }
 
+void R3D_SetActiveLayers(int layers)
+{
+    gRenderer->activeLayers = layers;
+}
+
+int R3D_GetActiveLayers()
+{
+    return gRenderer->activeLayers;
+}
+
+void R3D_AddActiveLayer(R3D_Layer layer)
+{
+    gRenderer->activeLayers |= layer;
+}
+
+void R3D_RemoveActiveLayer(R3D_Layer layer)
+{
+    gRenderer->activeLayers &= ~layer;
+}
+
+void R3D_ToggleActiveLayer(R3D_Layer layer)
+{
+    auto& layers = gRenderer->activeLayers;
+    if (layers & layer) layers &= ~layer;
+    else layers |= layer;
+}
+
 void R3D_Begin(Camera3D camera)
 {
     gRenderer->setCamera(camera);

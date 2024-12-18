@@ -275,6 +275,7 @@ public:
     R3D_Environment environment;                ///< Environment settings for the renderer.
     const RenderTexture *customRenderTarget;    ///< Custom raylib render target to which the blit is performed instead of the main framebuffer.
     R3D_DepthSortingOrder depthSortingOrder;    ///< Specifies the deoth sorting order of surfaces before rendering.
+    int activeLayers;                           ///< `R3D_Layer` that are active.
 
     int flags;  /**< Copies of the flags assigned during initialization,
                  *   may be modified during execution, except for flags that
@@ -566,6 +567,7 @@ inline Renderer::Renderer(int internalWidth, int internalHeight, int flags)
     })
     , customRenderTarget(nullptr)
     , depthSortingOrder(R3D_DEPTH_SORT_DISABLED)
+    , activeLayers(R3D_LAYER_0)
     , flags(flags)
     , mTargetScene(mInternalWidth, mInternalHeight)
     , mTargetPostFX(mInternalWidth, mInternalHeight)
@@ -726,17 +728,25 @@ inline bool Renderer::isObjectVisible(const Object& object, const BoundingBox& g
 {
     if (object.shadow == R3D_CAST_SHADOW_ONLY) return false;
     if (flags & R3D_FLAG_NO_FRUSTUM_CULLING) return true;
+    if (!(activeLayers & object.layer)) return false;
     return mFrustumCamera.aabbIn(globalAABB);
 }
 
 template <typename Object>
 inline void Renderer::setupLightsAndShadows(const Object& object, const BoundingBox& globalAABB, const Matrix& globalTransform, ShaderLightArray* lightArray)
 {
+    if (!(activeLayers & object.layer)) {   //< If the object's layer is inactive, return
+        return;
+    }
+
     int lightCount = 0;
 
     for (const auto& [id, light] : mLights) {
 
         if (!light.enabled || (!light.shadow && lightArray == nullptr)) continue;
+
+        if (!(activeLayers & light.layers)) continue;   //< If none of the light's layers are active, continue
+        if (!(light.layers & object.layer)) continue;   //< If the light does not affect the object's layer, continue
 
         // Here, we use a rather naive approach. If the light is not directional—
         // for instance, it does not simulate the sun—then we check whether the squared 
