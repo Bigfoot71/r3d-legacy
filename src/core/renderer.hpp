@@ -763,14 +763,14 @@ inline void Renderer::setupLightsAndShadows(const Object& object, const Bounding
             continue;
         }
 
-        // Ici, si la lumière n'est pas une omnilight nous effectuons un test de frustum
-        // depuis son point de vue, si l'objet n'est pas "visible" depuis la lumiere, nous skippons
+        // Here, if the light is not an omnilight, we perform a frustum test
+        // from its point of view. If the object is not "visible" from the light, we skip it
 
         if (light.type != R3D_OMNILIGHT && !light.frustum.aabbIn(globalAABB)) {
             continue;
         }
 
-        // Ici, si la lumiere produit des ombres nous ajoutons donc l'objet à son lot d'objet pour le rendu dans sa shadow map
+        // Here, if the light casts shadows, we add the object to its set of objects for rendering in its shadow map
 
         if (light.shadow) {
             if constexpr (std::is_same_v<Object, R3D_Model>) {
@@ -790,7 +790,7 @@ inline void Renderer::setupLightsAndShadows(const Object& object, const Bounding
             }
         }
 
-        // Ici, si un tableau de lumiere a été donné et qu'il n'est pas remplit nous ajoutons cette lumiere à ce tableau
+        // Here, if a light array has been given and it is not full, we add this light to the array
 
         if (lightArray && lightCount < SHADER_LIGHT_COUNT) {
             (*lightArray)[lightCount++] = &light;

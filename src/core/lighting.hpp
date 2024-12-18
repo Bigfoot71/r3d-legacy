@@ -130,9 +130,9 @@ inline Light::Light(R3D_LightType type, int shadowMapResolution)
 {
     if (shadow) {
         enableShadow(shadowMapResolution);
-        if (type != R3D_OMNILIGHT) {
-            updateFrustum();
-        }
+    }
+    if (type != R3D_OMNILIGHT) {
+        updateFrustum();
     }
 }
 

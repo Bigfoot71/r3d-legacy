@@ -23,7 +23,7 @@ int main(void)
 
     R3D_Model sphere = R3D_LoadModelFromMesh(GenMeshSphere(1.0f, 32, 64));
 
-    R3D_Light dirLight = R3D_CreateLight(R3D_DIRLIGHT, 4096);
+    R3D_Light dirLight = R3D_CreateLight(R3D_DIRLIGHT, 0);
     R3D_SetLightPosition(dirLight, (Vector3) { 0, 0, 10 });
     R3D_SetLightTarget(dirLight, (Vector3) { 0, 0, 0});
     R3D_SetLightLayers(dirLight, getLayers(0, 7));

@@ -70,7 +70,7 @@ void R3D_SetLightPosition(R3D_Light light, Vector3 position)
     auto& l = gRenderer->getLight(light);
     l.position = position;
 
-    if (l.shadow && l.type != R3D_OMNILIGHT) {
+    if (l.type != R3D_OMNILIGHT) {
         l.updateFrustum();
     }
 }
@@ -85,7 +85,7 @@ void R3D_SetLightDirection(R3D_Light light, Vector3 direction)
     auto& l = gRenderer->getLight(light);
     l.direction = direction;
 
-    if (l.shadow && l.type != R3D_OMNILIGHT) {
+    if (l.type != R3D_OMNILIGHT) {
         l.updateFrustum();
     }
 }
@@ -95,7 +95,7 @@ void R3D_SetLightTarget(R3D_Light light, Vector3 target)
     auto& l = gRenderer->getLight(light);
     l.direction = Vector3Normalize(Vector3Subtract(target, l.position));
 
-    if (l.shadow && l.type != R3D_OMNILIGHT) {
+    if (l.type != R3D_OMNILIGHT) {
         l.updateFrustum();
     }
 }
@@ -106,7 +106,7 @@ void R3D_SetLightPositionTarget(R3D_Light light, Vector3 position, Vector3 targe
     l.direction = Vector3Normalize(Vector3Subtract(target, position));
     l.position = position;
 
-    if (l.shadow && l.type != R3D_OMNILIGHT) {
+    if (l.type != R3D_OMNILIGHT) {
         l.updateFrustum();
     }
 }
@@ -178,13 +178,10 @@ bool R3D_IsLightProduceShadows(R3D_Light light)
 
 void R3D_EnableLightShadow(R3D_Light light, int shadowMapResolution)
 {
-    if (shadowMapResolution <= 0) return;
-
     auto& l = gRenderer->getLight(light);
 
-    if (l.shadow && l.type != R3D_OMNILIGHT) {
-        l.enableShadow(shadowMapResolution);
-        l.updateFrustum();
+    if (!l.shadow && shadowMapResolution > 0) {
+        gRenderer->getLight(light).enableShadow(shadowMapResolution);
     }
 }
 
@@ -192,7 +189,7 @@ void R3D_DisableLightShadow(R3D_Light light)
 {
     auto& l = gRenderer->getLight(light);
 
-    if (!l.shadow) {
+    if (l.shadow) {
         l.disableShadow();
     }
 }
