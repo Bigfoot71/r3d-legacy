@@ -17,8 +17,11 @@ R3D is ideal for developers who want to add 3D rendering to their raylib project
 - **Shadow Mapping**: Real-time shadow rendering with configurable resolution and support for different light types.
 - **Post-processing Effects**: Easily integrate post-processing effects like fog, bloom, tonemapping, color correction, etc.
 - **CPU Particle System**: Includes built-in support for CPU-side simulated particles with dynamic interpolation curve support.
+- **Billboards**: Supports billboards that are either fully camera-facing or rotate around the Y-axis to face the camera.  
+- **Sprite Animation**: Supports sprites that can be rendered as billboards or standard objects, with support for sprite sheet animations.
 - **Optional Frustum Culling**: Support for frustum culling by bounding box, can be disabled if you are already using your own system.
 - **Optional Depth Sorting**: Support for depth sorting, near-to-far, far-to-near, or disabled by default.
+- **Layer Mask System**: Controls rendering and lighting by assigning objects and lights to layers with efficient bitmask filtering.
 - **Blit Management**: Renders at a base resolution and blits the result (with applied post-processing effects), either maintaining the window aspect ratio or the internal resolution aspect ratio with an auto letterbox effect.
 
 ---
@@ -146,23 +149,22 @@ The function `R3D_CreateLight()` takes two parameters: the light type and the sh
 
 R3D supports the following light types:
 
-1. **R3D_DIRLIGHT (Directional Light)**:
-   - Directional lights simulate sunlight, lighting the scene from a specific direction.
-   - These lights do not have a position _(unless shadows are enabled)_. Instead, they have a direction and affect the entire scene equally, regardless of the light's position.
-   - However, if a directional light is supposed to cast shadows, you will need to assign it a position in order to determine from which point the objects it illuminates should be rendered in its shadow map.
+1. **R3D_DIRLIGHT (Directional Light)**:  
+   - Simulates sunlight, casting parallel rays of light in a specific direction across the entire scene.  
+   - Useful for outdoor environments where consistent lighting over large areas is required.  
 
-2. **R3D_SPOTLIGHT (Spotlight)**:
-   - Spotlights emit light in a cone-shaped area and are positioned at a specific location.
-   - You must define both the position and the target for a spotlight. The target specifies where the light is pointing.
-   - Spotlights have additional parameters:
-     - **Inner Cutoff**: The angle within which the light is fully bright.
-     - **Outer Cutoff**: The angle at which the light starts to fade from full brightness to full darkness.
-     - **Attenuation**: Defines how the light intensity decreases with distance from the light source. This can be adjusted for more realistic lighting effects.
+2. **R3D_SPOTLIGHT (Spotlight)**:  
+   - Emits a cone-shaped beam of light from a specific position, pointing toward a target.  
+   - Requires defining both the light's **position** and its **target** to determine the direction of the beam.  
+   - Spotlights include the following configurable parameters:  
+     - **Inner Cutoff**: The angle of the cone where the light is at full intensity.  
+     - **Outer Cutoff**: The angle where the light fades out to darkness.  
+     - **Attenuation**: Controls how the light intensity decreases with distance, enabling realistic falloff effects.  
 
-3. **R3D_OMNILIGHT (Omni Light)**:
-   - Omni lights are point lights that emit light in all directions, like a light bulb.
-   - The position is always required for omni lights, but the direction is **never used**.
-   - Similar to spotlights, omni lights also support **attenuation** to control how the light intensity falls off over distance.
+3. **R3D_OMNILIGHT (Omni Light)**:  
+   - A point light that radiates uniformly in all directions, similar to a light bulb.  
+   - Requires a **position** but does not use a direction or target.  
+   - Supports **attenuation** for realistic distance-based intensity falloff, allowing precise control over how far the light reaches.
 
 ### Drawing a Model
 
