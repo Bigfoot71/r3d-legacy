@@ -126,7 +126,7 @@ inline Light::Light(R3D_LightType type, int shadowMapResolution)
     , shadow(shadowMapResolution > 0)
     , enabled(false)
     , type(type)
-    , layers(R3D_LAYER_0)
+    , layers(R3D_LAYER_1)
 {
     if (shadow) {
         enableShadow(shadowMapResolution);

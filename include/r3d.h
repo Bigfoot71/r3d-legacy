@@ -237,17 +237,24 @@ typedef enum {
     R3D_OMNILIGHT            /**< Omnidirectional light, emitting light in all directions from a single point. */
 } R3D_LightType;
 
+/**
+ * @brief Represents the available rendering layers.
+ *
+ * The `R3D_Layer` enumeration defines a set of bitmask values representing individual layers
+ * that can be used for rendering, illumination, or filtering objects and lights in a scene.
+ * Each layer is represented by a unique bit, allowing multiple layers to be combined using bitwise operations.
+ */
 typedef enum {
-    R3D_LAYER_0 = 1 << 0,
-    R3D_LAYER_1 = 1 << 1,
-    R3D_LAYER_2 = 1 << 2,
-    R3D_LAYER_3 = 1 << 3,
-    R3D_LAYER_4 = 1 << 4,
-    R3D_LAYER_5 = 1 << 5,
-    R3D_LAYER_6 = 1 << 6,
-    R3D_LAYER_7 = 1 << 7,
-    R3D_LAYER_8 = 1 << 8,
-    R3D_LAYER_9 = 1 << 9
+    R3D_LAYER_1     = 1 << 0,   /**< Layer 1 (bit 0) */
+    R3D_LAYER_2     = 1 << 1,   /**< Layer 2 (bit 1) */
+    R3D_LAYER_3     = 1 << 2,   /**< Layer 3 (bit 2) */
+    R3D_LAYER_4     = 1 << 3,   /**< Layer 4 (bit 3) */
+    R3D_LAYER_5     = 1 << 4,   /**< Layer 5 (bit 4) */
+    R3D_LAYER_6     = 1 << 5,   /**< Layer 6 (bit 5) */
+    R3D_LAYER_7     = 1 << 6,   /**< Layer 7 (bit 6) */
+    R3D_LAYER_8     = 1 << 7,   /**< Layer 8 (bit 7) */
+    R3D_LAYER_9     = 1 << 8,   /**< Layer 9 (bit 8) */
+    R3D_LAYER_10    = 1 << 9    /**< Layer 10 (bit 9) */
 } R3D_Layer;
 
 /* Structs */

@@ -79,7 +79,7 @@ R3D_ParticleSystemCPU* R3D_LoadParticleEmitterCPU(const Mesh* mesh, const R3D_Ma
 
     system->shadow = R3D_CAST_OFF;
     system->billboard = R3D_BILLBOARD_ENABLED;
-    system->layer = R3D_LAYER_0;
+    system->layer = R3D_LAYER_1;
 
     system->autoEmission = true;
 

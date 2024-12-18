@@ -26,7 +26,7 @@ R3D_Sprite R3D_CreateSprite(Texture2D texture, int xFrameCount, int yFrameCount)
 
     sprite.shadow = R3D_CAST_OFF;
     sprite.billboard = R3D_BILLBOARD_Y_AXIS;
-    sprite.layer = R3D_LAYER_0;
+    sprite.layer = R3D_LAYER_1;
 
     return sprite;
 }

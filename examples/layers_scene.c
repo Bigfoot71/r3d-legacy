@@ -15,7 +15,7 @@ int getLayers(int from, int to)
 int main(void)
 {
     SetConfigFlags(FLAG_WINDOW_RESIZABLE);
-    InitWindow(800, 600, "R3D - Resize expanded");
+    InitWindow(800, 600, "R3D - Layers scene");
     SetTargetFPS(60);
 
     R3D_Init();
@@ -41,13 +41,13 @@ int main(void)
     while (!WindowShouldClose())
     {
         switch (GetKeyPressed()) {
-            case KEY_ONE: R3D_ToggleActiveLayer(R3D_LAYER_0); break;
-            case KEY_TWO: R3D_ToggleActiveLayer(R3D_LAYER_1); break;
-            case KEY_THREE: R3D_ToggleActiveLayer(R3D_LAYER_2); break;
-            case KEY_FOUR: R3D_ToggleActiveLayer(R3D_LAYER_3); break;
-            case KEY_FIVE: R3D_ToggleActiveLayer(R3D_LAYER_4); break;
-            case KEY_SIX: R3D_ToggleActiveLayer(R3D_LAYER_5); break;
-            case KEY_SEVEN: R3D_ToggleActiveLayer(R3D_LAYER_6); break;
+            case KEY_ONE: R3D_ToggleActiveLayer(R3D_LAYER_1); break;
+            case KEY_TWO: R3D_ToggleActiveLayer(R3D_LAYER_2); break;
+            case KEY_THREE: R3D_ToggleActiveLayer(R3D_LAYER_3); break;
+            case KEY_FOUR: R3D_ToggleActiveLayer(R3D_LAYER_4); break;
+            case KEY_FIVE: R3D_ToggleActiveLayer(R3D_LAYER_5); break;
+            case KEY_SIX: R3D_ToggleActiveLayer(R3D_LAYER_6); break;
+            case KEY_SEVEN: R3D_ToggleActiveLayer(R3D_LAYER_7); break;
             default: break;
         }
 
