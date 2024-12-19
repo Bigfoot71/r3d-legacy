@@ -22,6 +22,7 @@
 #include "../detail/Math.h"
 
 #include <raymath.h>
+#include <stdlib.h>
 
 R3D_InterpolationCurve R3D_LoadInterpolationCurve(int capacity)
 {
