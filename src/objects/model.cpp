@@ -27,7 +27,6 @@
 
 #include <cassert>
 #include <cstring>
-#include <cstdlib>
 #include <cfloat>
 
 /* Public API */

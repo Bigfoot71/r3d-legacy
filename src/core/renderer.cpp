@@ -25,8 +25,6 @@
 #include <raymath.h>
 
 #include <memory>
-#include <cstdio>
-#include <cfloat>
 
 
 // NOTE: Declared in 'src/renderer.hpp'
