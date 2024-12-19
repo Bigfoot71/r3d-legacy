@@ -33,7 +33,7 @@ R3D_Skybox R3D_LoadSkybox(const char* fileName, CubemapLayout layout)
     void *sky = new r3d::Skybox(fileName, layout);
 
     return {
-        .rotation = (Vector3) { 0, 0, 0 },
+        .rotation = { 0, 0, 0 },
         .internal = sky
     };
 }
@@ -43,7 +43,7 @@ R3D_Skybox R3D_LoadSkyboxHDR(const char* fileName, int sizeFace)
     void *sky = new r3d::Skybox(fileName, sizeFace);
 
     return {
-        .rotation = (Vector3) { 0, 0, 0 },
+        .rotation = { 0, 0, 0 },
         .internal = sky
     };
 }

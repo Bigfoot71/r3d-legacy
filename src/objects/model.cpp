@@ -276,7 +276,7 @@ void R3D_UpdateModelAnimation(R3D_Model* model, const char* name, int frame)
 
                 // Early stop when no transformation will be applied
                 if (boneWeight == 0.0f) continue;
-                animVertex = (Vector3){ mesh.vertices[vCounter], mesh.vertices[vCounter + 1], mesh.vertices[vCounter + 2] };
+                animVertex = { mesh.vertices[vCounter], mesh.vertices[vCounter + 1], mesh.vertices[vCounter + 2] };
                 animVertex = Vector3Transform(animVertex, surface.mesh.boneMatrices[boneId]);
                 mesh.animVertices[vCounter] += animVertex.x * boneWeight;
                 mesh.animVertices[vCounter+1] += animVertex.y * boneWeight;
@@ -286,7 +286,7 @@ void R3D_UpdateModelAnimation(R3D_Model* model, const char* name, int frame)
                 // Normals processing
                 // NOTE: We use meshes.baseNormals (default normal) to calculate meshes.normals (animated normals)
                 if (mesh.normals != nullptr) {
-                    animNormal = (Vector3){ mesh.normals[vCounter], mesh.normals[vCounter + 1], mesh.normals[vCounter + 2] };
+                    animNormal = { mesh.normals[vCounter], mesh.normals[vCounter + 1], mesh.normals[vCounter + 2] };
                     animNormal = Vector3Transform(animNormal, MatrixTranspose(MatrixInvert(surface.mesh.boneMatrices[boneId])));
                     mesh.animNormals[vCounter] += animNormal.x * boneWeight;
                     mesh.animNormals[vCounter + 1] += animNormal.y * boneWeight;

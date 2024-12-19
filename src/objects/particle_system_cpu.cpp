@@ -42,8 +42,8 @@ R3D_ParticleSystemCPU* R3D_LoadParticleEmitterCPU(const Mesh* mesh, const R3D_Ma
         .mesh = *mesh
     };
 
-    system->position = (Vector3) { 0, 0, 0 };
-    system->gravity = (Vector3) { 0, -9.81f, 0 };
+    system->position = { 0, 0, 0 };
+    system->gravity = { 0, -9.81f, 0 };
 
     system->initialScale = Vector3One();
     system->scaleVariance = 0.0f;
@@ -54,7 +54,7 @@ R3D_ParticleSystemCPU* R3D_LoadParticleEmitterCPU(const Mesh* mesh, const R3D_Ma
     system->initialColor = WHITE;
     system->colorVariance = BLANK;
 
-    system->initialVelocity = (Vector3) { 0, 0, 0 };
+    system->initialVelocity = { 0, 0, 0 };
     system->velocityVariance = Vector3Zero();
 
     system->initialAngularVelocity = Vector3Zero();
@@ -67,9 +67,9 @@ R3D_ParticleSystemCPU* R3D_LoadParticleEmitterCPU(const Mesh* mesh, const R3D_Ma
     system->emissionRate = 1.0f;
     system->spreadAngle = 0.0f;
 
-    system->aabb = (BoundingBox) {
-        (Vector3) { -10.0f, -10.0f, -10.0f },
-        (Vector3) { 10.0f, 10.0f, 10.0f }
+    system->aabb = {
+        { -10.0f, -10.0f, -10.0f },
+        { 10.0f, 10.0f, 10.0f }
     };
 
     system->scaleOverLifetime = nullptr;
