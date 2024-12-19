@@ -1,19 +1,46 @@
+#include "raylib.h"
 #include <stddef.h>
 #include <r3d.h>
+
+#ifndef R3D_ASSETS_PATH
+#   define R3D_ASSETS_PATH "assets/"
+#endif
+
+Vector3 cubePosition(int x, int z)
+{
+    return (Vector3) { x * 4.0f, 0.5f, z * 4.0f };
+}
+
+// NOTE: Not used, you can call this function before the
+//       main loop to add lights emitted from the cubes
+void addLights(void)
+{
+    for (int z = -1; z <= 1; z++) {
+        for (int x = -1; x <= 1; x++) {
+            R3D_Light light = R3D_CreateLight(R3D_SPOTLIGHT, 0);
+            R3D_SetLightPosition(light, cubePosition(x, z));
+            R3D_SetLightColor(light, (Color) { 255, 0, 0 });
+            R3D_SetLightActive(light, true);
+        }
+    }
+}
 
 int main(void)
 {
     InitWindow(800, 600, "R3D - Bloom");
-    SetTargetFPS(60);
+    //SetTargetFPS(60);
 
     R3D_Init();
 
     R3D_SetEnvBloomMode(R3D_BLOOM_ADDITIVE);
-    R3D_SetEnvBloomIntensity(0.2f);
-    R3D_SetEnvBloomHDRThreshold(0.1f);
+    R3D_SetEnvBloomIntensity(0.5f);
+
+    R3D_Skybox sky = R3D_LoadSkybox(R3D_ASSETS_PATH "skybox_outdoor.png", CUBEMAP_LAYOUT_AUTO_DETECT);
+    R3D_SetEnvWorldSkybox(&sky);
 
     R3D_Model ground = R3D_LoadModelFromMesh(GenMeshPlane(100, 100, 1, 1));
     R3D_SetMapAlbedo(&ground, 0, NULL, GRAY);
+    R3D_SetMapRoughness(&ground, 0, NULL, 0.2f);
 
     R3D_MaterialConfig cubeConfig = R3D_CreateMaterialConfig(
         R3D_DIFFUSE_BURLEY, R3D_SPECULAR_SCHLICK_GGX,
@@ -22,7 +49,7 @@ int main(void)
 
     R3D_Model cube = R3D_LoadModelFromMesh(GenMeshCube(1.0f, 1.0f, 1.0f));
     R3D_SetMapAlbedo(&cube, 0, NULL, (Color) { 255, 0, 0, 255 });
-    R3D_SetMapEmission(&cube, 0, R3D_GetDefaultTextureWhite(), 10.0f, (Color) { 255, 0, 0, 255 });
+    R3D_SetMapEmission(&cube, 0, R3D_GetDefaultTextureWhite(), 5.0f, (Color) { 255, 0, 0, 255 });
     R3D_SetMaterialConfig(&cube, 0, cubeConfig);
 
     Camera3D camera = {
@@ -32,9 +59,11 @@ int main(void)
         .fovy = 60.0f
     };
 
+    DisableCursor();
+
     while (!WindowShouldClose())
     {
-        UpdateCamera(&camera, CAMERA_ORBITAL);
+        UpdateCamera(&camera, CAMERA_FREE);
 
         BeginDrawing();
 
@@ -46,11 +75,7 @@ int main(void)
 
                 for (int z = -1; z <= 1; z++) {
                     for (int x = -1; x <= 1; x++) {
-                        R3D_DrawModelEx(&cube, (Vector3) {
-                            x * 4.0f,
-                            0.5f,
-                            z * 4.0f
-                        }, 1.0f);
+                        R3D_DrawModelEx(&cube, cubePosition(x, z), 1.0f);
                     }
                 }
 
