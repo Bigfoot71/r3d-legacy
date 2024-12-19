@@ -91,6 +91,13 @@ public:
     static void end();
 
     /**
+     * @brief Binds a specific mipmap level of an attachment for rendering.
+     * @param attach The attachment to bind.
+     * @param level The mipmap level to bind (typically 0 for the base level).
+     */
+    void bindLevel(GLAttachement attach, int level);
+
+    /**
      * @brief Binds a specific face of a cube map attachment for rendering.
      * @param attach The attachment to bind.
      * @param face The face index of the cube map (0 to 5).
@@ -258,11 +265,22 @@ inline void RenderTarget::end()
     GLFramebuffer::unbind();
 }
 
+inline void RenderTarget::bindLevel(GLAttachement attach, int level)
+{
+    const auto& texture = mAttachments.at(attach);
+    assert(level >= 0 && level < texture.mipCount());
+
+    glFramebufferTexture2D(GL_FRAMEBUFFER, static_cast<GLenum>(attach),
+        GL_TEXTURE_2D, texture.id(), 0);
+    glDrawBuffer(GL_COLOR_ATTACHMENT0);
+}
+
 inline void RenderTarget::bindFace(GLAttachement attach, int face) const
 {
     const auto& texture = mAttachments.at(attach);
+
     if (texture.target() == GL_TEXTURE_CUBE_MAP) {
-        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
+        glFramebufferTexture2D(GL_FRAMEBUFFER, static_cast<GLenum>(attach),
             GL_TEXTURE_CUBE_MAP_POSITIVE_X + face, texture.id(), 0);
         glDrawBuffer(GL_COLOR_ATTACHMENT0);
     } else {
