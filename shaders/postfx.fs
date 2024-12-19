@@ -173,51 +173,48 @@ vec3 Tonemapping(vec3 color, float pWhite) // inputs are LINEAR
 
 void main()
 {
-    // Echantilloner la texture de la scène
+    // Sampling scene color texture
     vec3 result = texture(uTexSceneHDR, vTexCoord).rgb;
 
-    // Application du bloom
-    if (uBloomMode == BLOOM_SOFT_LIGHT)
+    // Apply bloom
+    if (uBloomMode != BLOOM_DISABLED)
     {
         vec3 bloom = texture(uTexBloomBlurHDR, vTexCoord).rgb;
         bloom *= uBloomIntensity;
 
-        bloom = clamp(bloom.rgb, vec3(0.0f), vec3(1.0f));
-	    result = max((result + bloom) - (result * bloom), vec3(0.0));
-    }
-    else if (uBloomMode == BLOOM_ADDITIVE)
-    {
-        vec3 bloom = texture(uTexBloomBlurHDR, vTexCoord).rgb;
-        bloom *= uBloomIntensity;
-        result += bloom;
+        if (uBloomMode == BLOOM_SOFT_LIGHT) {
+            bloom = clamp(bloom.rgb, vec3(0.0), vec3(1.0));
+            result = max((result + bloom) - (result * bloom), vec3(0.0));
+        } else if (uBloomMode == BLOOM_ADDITIVE) {
+            result += bloom;
+        }
     }
 
     if (uFogMode != FOG_DISABLED)
     {
-        // Récupération de la profondeur et calcul de la distance
+        // Depth retrieval and distance calculation
         float depth = texture(uTexSceneDepth, vTexCoord).r;
         depth = LinearizeDepth(depth, uNear, uFar);
 
-        // Application du facteur de fog à la couleur resultante
+        // Applying the fog factor to the resulting color
         float fogFactor = FogFactor(depth, uFogMode, uFogDensity, uFogStart, uFogEnd);
         result = mix(result, uFogColor, fogFactor);
     }
 
-    // Appliquer le tone mapping
+    // Appply tonemapping
     //result = SRGBToLinear(result);        // already linear
     result *= uExposure;
     result = Tonemapping(result, uWhite);
-    //result = LinearToSRGB(result);        // see later
 
-    // Apply gamma correction
-    float gamma = 2.2;
-    result = pow(result, vec3(1.0/gamma));
+    // Apply gamma correction (or LinearToSRGB)
+    result = pow(result, vec3(1.0/2.2));
+    //result = LinearToSRGB(result);
 
-    // Ajustement de l'image
+    // Color adjustment
 	result = mix(vec3(0.0), result, uBrightness);
 	result = mix(vec3(0.5), result, uContrast);
 	result = mix(vec3(dot(vec3(1.0), result) * 0.33333), result, uSaturation);
 
-    // Finalisation de la couleur
+    // Final color output
     FragColor = vec4(result, 1.0);
 }

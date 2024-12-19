@@ -529,11 +529,10 @@ void main()
 
     FragColor = vec4(diffuse + specular + emission, albedo.a);
 
-    /* Handle bright colors for bloom / bloom */
+    /* Handle bright colors for bloom */
 
-    float brightness = dot(FragColor.rgb, vec3(0.2126, 0.7152, 0.0722));
-    if (brightness > uBloomHdrThreshold) FragBrightness = vec4(FragColor.rgb, 1.0);
-    else FragBrightness = vec4(0.0, 0.0, 0.0, 1.0);
+    float lum = dot(FragColor.rgb, vec3(0.2126, 0.7152, 0.0722));
+    FragBrightness = (lum > uBloomHdrThreshold) ? vec4(FragColor.rgb, lum) : vec4(0.0, 0.0, 0.0, lum);
 }
 
 

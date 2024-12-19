@@ -28,11 +28,10 @@
 #include "../detail/RL/RLCamera3D.hpp"
 #include "../detail/RL/RLTexture.hpp"
 #include "../detail/RL/RLShader.hpp"
-
-#include "../detail/GL/GLTexture.hpp"
 #include "../detail/GL/GLShader.hpp"
 
 #include "../detail/ShaderMaterial.hpp"
+#include "../detail/BloomRenderer.hpp"
 #include "../detail/RenderTarget.hpp"
 #include "../detail/BatchMap.hpp"
 #include "../detail/Frustum.hpp"
@@ -497,7 +496,7 @@ private:
     int mInternalHeight;                        ///< Internal framebuffer height.
     RenderTarget mTargetScene;                  ///< Render target for the main scene.
     RenderTarget mTargetPostFX;                 ///< Render target for post-processing effects.
-    std::array<RenderTarget, 2> mTargetBlur;    ///< Render targets for blurring effects.
+    BloomRenderer mBloomRenderer;               ///< Blur renderer used for the bloom effect.
 
     std::unordered_map<
         R3D_MaterialShaderConfig, ShaderMaterial,
@@ -515,9 +514,7 @@ private:
     RLTexture mWhiteTexture2D;      ///< White placeholder texture.
     Quad mQuad;                     ///< Quad used for rendering.
 
-    GLShader mShaderBlur;           ///< Shader for blurring.
     GLShader mShaderPostFX;         ///< Shader for post-processing effects.
-
     RLShader mShaderDepthCube;      ///< Shader for cube depth rendering.
     RLShader mShaderDepth;          ///< Shader for depth rendering.
 
@@ -574,10 +571,7 @@ inline Renderer::Renderer(int internalWidth, int internalHeight, int flags)
     , flags(flags)
     , mTargetScene(mInternalWidth, mInternalHeight)
     , mTargetPostFX(mInternalWidth, mInternalHeight)
-    , mTargetBlur({
-        RenderTarget(mInternalWidth, mInternalHeight),
-        RenderTarget(mInternalWidth, mInternalHeight)
-    })
+    , mBloomRenderer(mInternalWidth, mInternalHeight)
     , mDefaultMaterialConfig({
         .shader = {
             .diffuse = R3D_DIFFUSE_BURLEY,
@@ -593,7 +587,6 @@ inline Renderer::Renderer(int internalWidth, int internalHeight, int flags)
     })
     , mBlackTexture2D(BLACK)
     , mWhiteTexture2D(WHITE)
-    , mShaderBlur(VS_CODE_BLUR, FS_CODE_BLUR)
     , mShaderPostFX(VS_CODE_POSTFX, FS_CODE_POSTFX)
     , mShaderDepthCube(VS_CODE_DEPTH_CUBE, FS_CODE_DEPTH_CUBE)
     , mShaderDepth(VS_CODE_DEPTH, FS_CODE_DEPTH)
@@ -614,6 +607,9 @@ inline Renderer::Renderer(int internalWidth, int internalHeight, int flags)
     loadMaterialConfig(mDefaultMaterialConfig);
 
     // Configuring the scene render target
+    // DEPTH: Contains the depth of the scene...
+    // COLOR_0: Contains the final colors of the scene
+    // COLOR_1: Contains the colors of areas brighter than the HDR threshold for bloom, the Alpha component contains the perceived luminance
 
     mTargetScene.createAttachment(GLAttachement::DEPTH, GL_TEXTURE_2D, GL_DEPTH_COMPONENT24, GL_DEPTH_COMPONENT, GL_UNSIGNED_INT);
     mTargetScene.createAttachment(GLAttachement::COLOR_0, GL_TEXTURE_2D, GL_RGBA16F, GL_RGBA, GL_FLOAT);
@@ -630,17 +626,6 @@ inline Renderer::Renderer(int internalWidth, int internalHeight, int flags)
         GLAttachement::COLOR_0, GL_TEXTURE_2D,
         GL_RGBA8, GL_RGBA, GL_UNSIGNED_BYTE
     );
-
-    // Configuring render targets for two-pass blur processing (used for bloom)
-
-    for (int i = 0; i < 2; i++) {
-        auto& texture = mTargetBlur[i].createAttachment(
-            GLAttachement::COLOR_0, GL_TEXTURE_2D,
-            GL_RGBA16F, GL_RGBA, GL_FLOAT
-        );
-        texture.filter(GLTexture::Filter::BILINEAR);
-        texture.wrap(GLTexture::Wrap::CLAMP_BORDER);
-    }
 }
 
 inline void Renderer::loadMaterialConfig(R3D_MaterialConfig config)
@@ -948,6 +933,13 @@ inline void Renderer::renderScenePass()
             static_cast<Skybox*>(skybox->internal)->draw(quatSkybox);
         }
 
+        /* Preparing the scene rendering */
+
+        glDisablei(GL_BLEND, 1);    /*< Here we disable color blending for the output `COLOR_1`
+                                                   *  which corresponds to the HDR values for bloom calculation, as
+                                                   *  we store the perceived luminance in the alpha component.
+                                                   */
+
         /* Render surfaces */
 
         for (auto& [config, batch] : mSceneBatches) {
@@ -956,9 +948,9 @@ inline void Renderer::renderScenePass()
             // TODO: Find a method to reduce calls to state changes, even if probably ignored by most drivers...
 
             if (config.blendMode == R3D_BLEND_DISABLED) {
-                rlDisableColorBlend();
+                glDisablei(GL_BLEND, 0);
             } else {
-                rlEnableColorBlend();
+                glEnablei(GL_BLEND, 0);
                 rlSetBlendMode(config.blendMode - 1);
             }
 
@@ -1004,24 +996,11 @@ inline void Renderer::renderPostProcessPass()
 {
     /* Apply gaussian blur (two passes) for bloom if needed */
 
-    bool horizontal = true;
     if (environment.bloom.mode != R3D_BLOOM_DISABLED) {
-        mShaderBlur.begin();
-        {
-            for (int i = 0; i < environment.bloom.iterations; i++) {
-                mTargetBlur[horizontal].begin(); 
-                mShaderBlur.setValue("uHorizontal", horizontal);
-                mShaderBlur.bindTexture("uTexture", i > 0
-                    ? mTargetBlur[!horizontal].attachement(GLAttachement::COLOR_0)
-                    : mTargetScene.attachement(GLAttachement::COLOR_1)
-                ); 
-                mQuad.draw();
-                horizontal = !horizontal;
-                mShaderBlur.unbindTextures();
-            }
-            GLFramebuffer::unbind();
-        }
-        mShaderBlur.end();
+        mBloomRenderer.render(
+            mTargetScene.attachement(GLAttachement::COLOR_1),
+            environment.bloom.iterations
+        );
     }
 
     /* Apply post effects */
@@ -1032,7 +1011,7 @@ inline void Renderer::renderPostProcessPass()
             mShaderPostFX.setValue("uBloomMode", static_cast<int>(environment.bloom.mode));
 
             if (environment.bloom.mode != R3D_BLOOM_DISABLED) {
-                mShaderPostFX.bindTexture("uTexBloomBlurHDR", mTargetBlur[!horizontal].attachement(GLAttachement::COLOR_0));
+                mShaderPostFX.bindTexture("uTexBloomBlurHDR", mBloomRenderer.result());
                 mShaderPostFX.setValue("uBloomIntensity", environment.bloom.intensity);
             }
 
@@ -1095,10 +1074,7 @@ inline void Renderer::updateInternalResolution(int newWidth, int newHeight)
 
     mTargetScene.resize(newWidth, newHeight);
     mTargetPostFX.resize(newWidth, newHeight);
-
-    for (auto& target : mTargetBlur) {
-        target.resize(newWidth, newHeight);
-    }
+    mBloomRenderer.resize(newWidth, newHeight);
 }
 
 inline R3D_Light Renderer::addLight(R3D_LightType type, int shadowMapResolution)

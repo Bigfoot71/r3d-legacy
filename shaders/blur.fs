@@ -1,39 +1,45 @@
+// NOTE: The coefficients for the two-pass Gaussian blur were generated using:
+//       https://lisyarus.github.io/blog/posts/blur-coefficients-generator.html
+
 #version 330 core
 
-const float WEIGHT[5] = float[] (
-    0.227027,
-    0.1945946,
-    0.1216216,
-    0.054054,
-    0.016216
-);
-
 in vec2 vTexCoord;
-
 uniform sampler2D uTexture;
-uniform bool uHorizontal;
-
+uniform vec2 uDirection;
 out vec4 FragColor;
 
+// === Blur Coefs ===
+
+const int SAMPLE_COUNT = 5;
+
+const float OFFSETS[5] = float[5](
+    -3.4048471718931532,
+    -1.4588111840004858,
+    0.48624268466894843,
+    2.431625915613778,
+    4
+);
+
+const float WEIGHTS[5] = float[5](
+    0.15642123799829394,
+    0.26718801880015064,
+    0.29738065394682034,
+    0.21568339342709997,
+    0.06332669582763516
+);
+
+// === Main Program ===
+
 void main()
-{             
-    vec2 texOffset = 1.0 / textureSize(uTexture, 0); // gets size of single texel
-    vec3 result = texture(uTexture, vTexCoord).rgb * WEIGHT[0]; // current fragment's contribution
-    if (uHorizontal)
+{
+    vec3 result = vec3(0.0);
+    vec2 size = textureSize(uTexture, 0);
+
+    for (int i = 0; i < SAMPLE_COUNT; ++i)
     {
-        for(int i = 1; i < 5; i++)
-        {
-            result += texture(uTexture, vTexCoord + vec2(texOffset.x * i, 0.0)).rgb * WEIGHT[i];
-            result += texture(uTexture, vTexCoord - vec2(texOffset.x * i, 0.0)).rgb * WEIGHT[i];
-        }
+        vec2 offset = uDirection * OFFSETS[i] / size;
+        result += texture(uTexture, vTexCoord + offset).rgb * WEIGHTS[i];
     }
-    else
-    {
-        for(int i = 1; i < 5; ++i)
-        {
-            result += texture(uTexture, vTexCoord + vec2(0.0, texOffset.y * i)).rgb * WEIGHT[i];
-            result += texture(uTexture, vTexCoord - vec2(0.0, texOffset.y * i)).rgb * WEIGHT[i];
-        }
-    }
+
     FragColor = vec4(result, 1.0);
 }
