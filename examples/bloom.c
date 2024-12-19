@@ -2,6 +2,8 @@
 #include <stddef.h>
 #include <r3d.h>
 
+#include <raymath.h>
+
 #ifndef R3D_ASSETS_PATH
 #   define R3D_ASSETS_PATH "assets/"
 #endif
@@ -11,8 +13,6 @@ Vector3 cubePosition(int x, int z)
     return (Vector3) { x * 4.0f, 0.5f, z * 4.0f };
 }
 
-// NOTE: Not used, you can call this function before the
-//       main loop to add lights emitted from the cubes
 void addLights(void)
 {
     for (int z = -1; z <= 1; z++) {
@@ -20,7 +20,6 @@ void addLights(void)
             R3D_Light light = R3D_CreateLight(R3D_SPOTLIGHT, 0);
             R3D_SetLightPosition(light, cubePosition(x, z));
             R3D_SetLightColor(light, (Color) { 255, 0, 0 });
-            R3D_SetLightActive(light, true);
         }
     }
 }
@@ -28,7 +27,7 @@ void addLights(void)
 int main(void)
 {
     InitWindow(800, 600, "R3D - Bloom");
-    //SetTargetFPS(60);
+    SetTargetFPS(60);
 
     R3D_Init();
 
@@ -51,6 +50,9 @@ int main(void)
     R3D_SetMapAlbedo(&cube, 0, NULL, (Color) { 255, 0, 0, 255 });
     R3D_SetMapEmission(&cube, 0, R3D_GetDefaultTextureWhite(), 5.0f, (Color) { 255, 0, 0, 255 });
     R3D_SetMaterialConfig(&cube, 0, cubeConfig);
+
+    addLights();
+    bool lighting = false;
 
     Camera3D camera = {
         .position = (Vector3) { -10, 10, -10 },
@@ -79,9 +81,21 @@ int main(void)
                     }
                 }
 
+                int intensity = IsKeyDown(KEY_V) - IsKeyDown(KEY_C);
+                R3D_SetEnvBloomIntensity(Clamp(R3D_GetEnvBloomIntensity() + intensity * 0.01f, 0.0, 1.0));
+
+                if (IsKeyPressed(KEY_L)) {
+                    for (int light = 0; light < 6; light++) {
+                        R3D_ToggleLight(light);
+                    }
+                    lighting = !lighting;
+                }
+
             R3D_End();
 
-            DrawFPS(10, 10);
+            //DrawFPS(10, 10);
+            DrawText(TextFormat("Intensity (C-V): %.2f", R3D_GetEnvBloomIntensity()), 10, 10, 20, BLACK);
+            DrawText(TextFormat("Lights (L): %s", lighting ? "Enabled" : "Disabled" ), 10, 30, 20, BLACK);
 
         EndDrawing();
     }
