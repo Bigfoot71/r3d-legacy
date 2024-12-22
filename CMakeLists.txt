@@ -20,7 +20,7 @@ endif()
 
 option(R3D_BUILD_EXAMPLES "Build the examples for the project" ${R3D_IS_MAIN})
 
-include(${R3D_ROOT_PATH}/samples/CMakeLists.txt)
+include(${R3D_ROOT_PATH}/shaders/CMakeLists.txt)
 include(${R3D_ROOT_PATH}/src/CMakeLists.txt)
 
 add_library(${PROJECT_NAME}

@@ -43,6 +43,6 @@ set(R3D_SOURCES_GENERATED "${CMAKE_BINARY_DIR}/generated/src/ShaderCode.cpp")
 
 # Header file generation with built-in shaders
 configure_file(
-    ${R3D_ROOT_PATH}/samples/ShaderCode.cpp.in
+    ${R3D_ROOT_PATH}/shaders/ShaderCode.cpp.in
     ${R3D_SOURCES_GENERATED}
 )
