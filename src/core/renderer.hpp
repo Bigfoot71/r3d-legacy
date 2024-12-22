@@ -22,8 +22,6 @@
 
 #include "r3d.h"
 
-#include "detail/ShaderCodes.hpp"
-
 #include "../detail/GL/GLFramebuffer.hpp"
 #include "../detail/RL/RLCamera3D.hpp"
 #include "../detail/RL/RLTexture.hpp"
@@ -33,6 +31,7 @@
 #include "../detail/ShaderMaterial.hpp"
 #include "../detail/BloomRenderer.hpp"
 #include "../detail/RenderTarget.hpp"
+#include "../detail/ShaderCode.hpp"
 #include "../detail/BatchMap.hpp"
 #include "../detail/Frustum.hpp"
 #include "../detail/IDMan.hpp"

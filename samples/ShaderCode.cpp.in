@@ -1,6 +1,6 @@
-// ShaderCodes.cpp - Automatically generated
+// ShaderCode.cpp - Automatically generated
 
-#include "detail/ShaderCodes.hpp"
+#include R3D_SHADER_CODE_HEADER
 
 namespace r3d {
 

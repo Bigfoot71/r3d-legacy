@@ -20,11 +20,10 @@
 #ifndef R3D_SKYBOX_HPP
 #define R3D_SKYBOX_HPP
 
-#include "detail/ShaderCodes.hpp"
-
 #include "../detail/GL/GLShader.hpp"
 #include "../detail/RL/RLTexture.hpp"
 
+#include "../detail/ShaderCode.hpp"
 #include "../detail/Quad.hpp"
 #include "../detail/Cube.hpp"
 

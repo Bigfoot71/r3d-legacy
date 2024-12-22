@@ -1,3 +1,6 @@
+# Define path to 'detail/ShaderCode.hpp' header
+add_definitions(-DR3D_SHADER_CODE_HEADER="${R3D_ROOT_PATH}/src/detail/ShaderCode.hpp")
+
 # This function takes input the path of a shader, minifies it via
 # a python script and copies the output of the minifier to a source file
 function(process_shader shader_file var_name)
@@ -36,10 +39,10 @@ process_shader("${R3D_ROOT_PATH}/shaders/debug/debugDepthTexture2D.fs" FS_CODE_D
 process_shader("${R3D_ROOT_PATH}/shaders/debug/debugDepthCubemap.fs" FS_CODE_DEBUG_DEPTH_CUBEMAP)
 
 # Set the path of the generated header file
-set(R3D_SOURCES_GENERATED "${CMAKE_BINARY_DIR}/generated/src/ShaderCodes.cpp")
+set(R3D_SOURCES_GENERATED "${CMAKE_BINARY_DIR}/generated/src/ShaderCode.cpp")
 
 # Header file generation with built-in shaders
 configure_file(
-    ${R3D_ROOT_PATH}/samples/ShaderCodes.cpp.in
+    ${R3D_ROOT_PATH}/samples/ShaderCode.cpp.in
     ${R3D_SOURCES_GENERATED}
 )
