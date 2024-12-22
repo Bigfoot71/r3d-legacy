@@ -20,9 +20,9 @@
 #ifndef R3D_DETAIL_GL_SHADER_HPP
 #define R3D_DETAIL_GL_SHADER_HPP
 
-#include "../GL.hpp"
+#include "../gl.hpp"
 
-#include "./GLTexture.hpp"
+#include "./gl_texture.hpp"
 
 #include <raylib.h>
 #include <rlgl.h>

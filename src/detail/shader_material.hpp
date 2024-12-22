@@ -22,9 +22,9 @@
 
 #include "r3d.h"
 
-#include "./GL/GLFramebuffer.hpp"
-#include "./GL/GLShader.hpp"
-#include "./GL.hpp"
+#include "./gl_helper/gl_framebuffer.hpp"
+#include "./gl_helper/gl_shader.hpp"
+#include "./gl.hpp"
 
 #include "../objects/skybox.hpp"
 #include "../core/lighting.hpp"

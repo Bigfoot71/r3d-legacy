@@ -22,10 +22,10 @@
 
 #include "r3d.h"
 
-#include "../detail/GL/GLFramebuffer.hpp"
-#include "../detail/RenderTarget.hpp"
-#include "../detail/Frustum.hpp"
-#include "../detail/Math.h"
+#include "../detail/gl_helper/gl_framebuffer.hpp"
+#include "../detail/render_target.hpp"
+#include "../detail/frustum.hpp"
+#include "../detail/math.h"
 
 #include <raylib.h>
 #include <raymath.h>

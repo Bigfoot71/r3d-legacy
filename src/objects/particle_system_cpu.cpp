@@ -19,7 +19,7 @@
 
 #include "r3d.h"
 
-#include "../detail/RandomGenerator.hpp"
+#include "../detail/random_generator.hpp"
 
 #include <raylib.h>
 #include <raymath.h>

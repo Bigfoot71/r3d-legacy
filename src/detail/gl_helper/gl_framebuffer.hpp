@@ -20,10 +20,10 @@
 #ifndef R3D_DETAIL_GL_FRAMEBUFFER_HPP
 #define R3D_DETAIL_GL_FRAMEBUFFER_HPP
 
-#include "./GLTexture.hpp"
+#include "./gl_texture.hpp"
 
-#include "../Build.hpp"
-#include "../GL.hpp"
+#include "../build_info.hpp"
+#include "../gl.hpp"
 
 #include <initializer_list>
 #include <stdexcept>

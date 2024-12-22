@@ -20,7 +20,7 @@
 #ifndef R3D_DETAIL_CUBE_HPP
 #define R3D_DETAIL_CUBE_HPP
 
-#include "./GL.hpp"
+#include "./gl.hpp"
 #include <rlgl.h>
 
 namespace r3d {

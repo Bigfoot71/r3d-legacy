@@ -20,10 +20,10 @@
 #ifndef R3D_DETAIL_RENDER_TARGET_HPP
 #define R3D_DETAIL_RENDER_TARGET_HPP
 
-#include "./GL.hpp"
+#include "./gl.hpp"
 
-#include "./GL/GLTexture.hpp"
-#include "./GL/GLFramebuffer.hpp"
+#include "./gl_helper/gl_texture.hpp"
+#include "./gl_helper/gl_framebuffer.hpp"
 
 #include <raylib.h>
 #include <rlgl.h>

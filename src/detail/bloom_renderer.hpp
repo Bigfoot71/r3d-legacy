@@ -1,11 +1,11 @@
 #ifndef R3D_DETAIL_BLOOM_RENDERER_HPP
 #define R3D_DETAIL_BLOOM_RENDERER_HPP
 
-#include "./GL/GLFramebuffer.hpp"
-#include "./RenderTarget.hpp"
-#include "./GL/GLShader.hpp"
-#include "./ShaderCode.hpp"
-#include "./Quad.hpp"
+#include "./gl_helper/gl_framebuffer.hpp"
+#include "./render_target.hpp"
+#include "./gl_helper/gl_shader.hpp"
+#include "./shader_code.hpp"
+#include "./drawable_quad.hpp"
 #include <array>
 
 namespace r3d {

@@ -19,7 +19,7 @@
 
 #include "r3d.h"
 
-#include "../detail/Math.h"
+#include "../detail/math.h"
 
 #include <raymath.h>
 #include <stdlib.h>
