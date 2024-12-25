@@ -507,7 +507,7 @@ private:
 
     std::map<R3D_Light, Light> mLights;         ///< Map of lights and their data.
     R3D_MaterialConfig mDefaultMaterialConfig;  ///< Default material configuration.
-    IDMan<R3D_Light> mLightIDMan;               ///< Light ID manager.
+    IDManager<R3D_Light> mLightIDMan;               ///< Light ID manager.
 
     RLTexture mBlackTexture2D;      ///< Black placeholder texture.
     RLTexture mWhiteTexture2D;      ///< White placeholder texture.

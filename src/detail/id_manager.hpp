@@ -17,8 +17,8 @@
  *   3. This notice may not be removed or altered from any source distribution.
  */
 
-#ifndef R3D_DETAIL_IDMAN_HPP
-#define R3D_DETAIL_IDMAN_HPP
+#ifndef R3D_DETAIL_ID_MANAGER_HPP
+#define R3D_DETAIL_ID_MANAGER_HPP
 
 #include <type_traits>
 #include <set>
@@ -36,7 +36,7 @@ namespace r3d {
  * @tparam T_ID The type of the identifier. It must be an integral type.
  */
 template<typename T_ID>
-class IDMan
+class IDManager
 {
     static_assert(std::is_integral<T_ID>::value, "T_ID must be an integral type");
 
@@ -48,7 +48,7 @@ public:
      * 
      * @param start The starting ID. Defaults to 0.
      */
-    explicit IDMan(T_ID start = 0)
+    explicit IDManager(T_ID start = 0)
         : m_next_id(start)
     { }
 
