@@ -102,6 +102,8 @@ int main(void)
 
     R3D_UnloadModel(&ground);
     R3D_UnloadModel(&cube);
+
+    R3D_UnloadSkybox(&sky);
     R3D_Close();
 
     CloseWindow();
