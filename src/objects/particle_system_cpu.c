@@ -222,7 +222,7 @@ void R3D_UpdateParticleEmitterCPU(R3D_ParticleSystemCPU* system, float deltaTime
 
         particle->lifetime -= deltaTime;
         if (particle->lifetime <= 0.0f) {
-            particle = &system->particles[--system->particleCount];
+            *particle = system->particles[--system->particleCount];
             continue;
         }
 
