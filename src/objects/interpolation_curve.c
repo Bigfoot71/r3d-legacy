@@ -28,7 +28,7 @@ R3D_InterpolationCurve R3D_LoadInterpolationCurve(int capacity)
 {
     R3D_InterpolationCurve curve;
 
-    curve.keyframes = malloc(capacity * sizeof(R3D_Keyframe));
+    curve.keyframes = RL_MALLOC(capacity * sizeof(R3D_Keyframe));
     curve.capacity = capacity;
     curve.size = 0;
 
@@ -47,7 +47,7 @@ bool R3D_AddKeyframe(R3D_InterpolationCurve* curve, float time, float value)
     if (curve->size >= curve->capacity) {
         // We resize the buffer to the next power of 2
         unsigned int newCapacity = nextPOT32(curve->capacity);
-        R3D_Keyframe *newKeyframes = realloc(curve->keyframes, newCapacity * sizeof(R3D_Keyframe));
+        R3D_Keyframe *newKeyframes = RL_REALLOC(curve->keyframes, newCapacity * sizeof(R3D_Keyframe));
         if (!newKeyframes) {
             return false; // Memory allocation failed
         }
